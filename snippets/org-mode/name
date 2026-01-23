@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: name property
+# key: name
+# --
+#+NAME: `yas-selected-text`$0

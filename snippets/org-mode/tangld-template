@@ -1,0 +1,30 @@
+# -*- mode: snippet -*-
+# name: tangld-template
+# key: tangld
+# expand-env: ((base-name (file-name-sans-extension (file-name-nondirectory (buffer-file-name)))))
+# --
+:PROPERTIES:
+:ID: `(org-id-uuid)`
+:END:
+#+TITLE: Tangld : Emacs init • `base-name`
+#+SUBTITLE: Literate configuration for Emacs
+#+PROPERTY: header-args+ :noweb yes
+#+PROPERTY: header-args+ :cache no
+#+PROPERTY: header-args+ :lexical yes
+#+PROPERTY: header-args+ :comments noweb
+#+PROPERTY: header-args+ :padline yes
+
+* Heading
+
+#+BEGIN_SRC emacs-lisp :comments no
+  ;;; `base-name`.el --- Emacs initialization file -*- lexical-binding: t -*-
+#+END_SRC
+
+* ${1:`(capitalize base-name)`}
+  :PROPERTIES:
+  :END:
+
+  #+NAME: ${1:$(downcase yas-text)}
+  #+BEGIN_SRC emacs-lisp
+  ${0:`(substring-no-properties (current-kill 0 t))`}
+  #+END_SRC

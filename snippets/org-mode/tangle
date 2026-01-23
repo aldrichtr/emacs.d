@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: tangle
+# key: :tangle
+# --
+:tangle ${0:$$(yas-choose-value '("yes" "no" ""))}

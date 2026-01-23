@@ -1,0 +1,11 @@
+# -*- mode: snippet -*-
+# name: org-mode file template
+# --
+:PROPERTIES:
+:ID: `(org-id-new)`
+:END:
+#+title: $1
+#+subtitle: $2
+#+startup: hideblocks hidedrawers
+
+$0

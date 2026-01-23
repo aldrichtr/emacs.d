@@ -1,0 +1,22 @@
+
+# Emacs backups
+*~
+
+# Emacs temp files
+
+.#.*
+
+
+# Ephemeral Emacs dirs
+
+transient/
+
+eln-cache/
+
+auto-save-list/
+
+tramp
+
+# Org-mode files
+
+.org-generic-id-locations

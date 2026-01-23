@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: Source Block - PowerShell
+# key: pwsh
+# --
+#+BEGIN_SRC powershell
+$0
+#+END_SRC

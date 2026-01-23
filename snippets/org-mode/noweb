@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: noweb
+# key: :noweb
+# --
+:noweb ${0:$$(yas-choose-value '("yes" "no" ""))}

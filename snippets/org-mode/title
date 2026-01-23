@@ -1,0 +1,6 @@
+# -*- mode: snippet -*-
+# group: File Properties
+# name: property - title
+# key: +TITLE
+# --
+#+TITLE: $0
