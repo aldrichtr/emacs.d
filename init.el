@@ -100,6 +100,52 @@ user-mail-address "timothy.r.aldrich@gmail.com")
 (use-package major-mode-hydra
   :demand t)
 
+;;;; General
+
+(use-package general
+  :functions (leader-menu)
+  :demand t
+  :custom
+  (general-describe-keymap-sort-function #'general-sort-by-car)
+  (general-describe-state-sort-function #'general-sort-by-car)
+
+  ;; Evaluating a file with keybindings will update changed definitions
+  ;; if nil, only unbound keybindings will be updated
+  (general-describe-update-previous-definition 'on-change)
+  :config
+  ;; `general-evil-setup' provides `general-nmap', et. al.
+  ;; with a non-nil argument will create evil-mode maps
+  ;; without the `general-' prefix, `nmap' et. al.
+  (general-evil-setup t)
+  ;; Avoid "Key sequence starts with non-prefix key" errors
+  (general-auto-unbind-keys)
+  ;; Create the `leader-menu' keybinding definition.  Emulate the "Spacemacs"
+  ;; functionality where commands are organized behind the leader `<SPC>'
+  (general-create-definer leader-menu
+    :states
+    ;; Use `:prefix'
+    '(normal visual motion operator
+             ;; Use `:non-normal-prefix' see variable `general-non-normal-states'
+             insert replace emacs hybrid iedit-insert)
+    :prefix "SPC"
+    :non-normal-prefix "S-SPC"
+    )
+
+  (general-create-definer global-def
+    :keymap 'global-map
+    :states
+    ;; Use `:prefix'
+    '(normal visual motion operator
+             ;; Use `:non-normal-prefix' see variable `general-non-normal-states'
+             insert replace emacs hybrid iedit-insert)
+    )
+
+  ;; Create the `major-mode-menu' keybinding definition.  Organize major-mode bindings
+  ;; behind `<SPC>m'. Again, just like spacemacs
+  (general-create-definer major-mode-menu
+    :states '(normal)
+    :prefix ","))
+
 ;;;; Evil
 
 (use-package evil
@@ -241,52 +287,6 @@ user-mail-address "timothy.r.aldrich@gmail.com")
   (evil-lion-mode 1))
 
 (use-package evil-iedit-state)
-
-;;;; General
-
-(use-package general
-  :functions (leader-menu)
-  :demand t
-  :custom
-  (general-describe-keymap-sort-function #'general-sort-by-car)
-  (general-describe-state-sort-function #'general-sort-by-car)
-
-  ;; Evaluating a file with keybindings will update changed definitions
-  ;; if nil, only unbound keybindings will be updated
-  (general-describe-update-previous-definition 'on-change)
-  :config
-  ;; `general-evil-setup' provides `general-nmap', et. al.
-  ;; with a non-nil argument will create evil-mode maps
-  ;; without the `general-' prefix, `nmap' et. al.
-  (general-evil-setup t)
-  ;; Avoid "Key sequence starts with non-prefix key" errors
-  (general-auto-unbind-keys)
-  ;; Create the `leader-menu' keybinding definition.  Emulate the "Spacemacs"
-  ;; functionality where commands are organized behind the leader `<SPC>'
-  (general-create-definer leader-menu
-    :states
-    ;; Use `:prefix'
-    '(normal visual motion operator
-             ;; Use `:non-normal-prefix' see variable `general-non-normal-states'
-             insert replace emacs hybrid iedit-insert)
-    :prefix "SPC"
-    :non-normal-prefix "S-SPC"
-    )
-
-  (general-create-definer global-def
-    :keymap 'global-map
-    :states
-    ;; Use `:prefix'
-    '(normal visual motion operator
-             ;; Use `:non-normal-prefix' see variable `general-non-normal-states'
-             insert replace emacs hybrid iedit-insert)
-    )
-
-  ;; Create the `major-mode-menu' keybinding definition.  Organize major-mode bindings
-  ;; behind `<SPC>m'. Again, just like spacemacs
-  (general-create-definer major-mode-menu
-    :states '(normal)
-    :prefix ","))
 
 ;;;; Which-key
 
@@ -471,8 +471,6 @@ user-mail-address "timothy.r.aldrich@gmail.com")
   :defines (config:emacs-server-run)
   :custom
   (server-use-tcp t)
-  (server-auth-dir (expand-file-name
-                    (file-name-concat config:emacs-local-dir "server")))
   (server-window 'pop-to-buffer)
   :config
   (unless (server-running-p)
@@ -1580,9 +1578,9 @@ project, or ask for a project if not in one."
   ;; menu function.  Perform an action on the given object.
   :general
   (general-def 'global
-    "C-<return>" 'embark-act
-    "M-." '("Default embark action" . embark-dwim)
-    "M-S-x" 'embark-bindings)
+    "C-RET" '("Embark list" . embark-act)
+    "M-."   '("embark"      . embark-dwim)
+    "M-S-x" '("Describe bindings" . embark-bindings))
 
   :init
   ;; Optionally replace the key help with a completing-read interface

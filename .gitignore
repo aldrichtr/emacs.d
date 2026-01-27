@@ -9,6 +9,8 @@
 
 # Ephemeral Emacs dirs
 
+server/
+
 transient/
 
 eln-cache/
