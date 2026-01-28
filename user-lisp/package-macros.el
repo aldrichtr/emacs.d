@@ -8,7 +8,7 @@
 
 (defmacro use-feature (&rest args)
   "A `use-package' definition that represents a core Emacs feature.
-This is the same as calling \"use-package emacs ARGS\" with ensure nil,
+This is the same as calling `use-package Emacs ARGS' with ensure nil,
 defer nil."
   (declare (indent defun))
   `(use-package emacs
