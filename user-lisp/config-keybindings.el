@@ -4,6 +4,12 @@
 
 ;;; Code:
 
+(require 'general)
+(require 'leader-key-system)
+
+;;; Global keybindings
+
+
 (dolist
     ;; Leader menu keybindings
     ;; Each item in the list is an item in the leader menu
@@ -11,7 +17,7 @@
     ;; if DISPLAY-NAME is ommitted
     (lmenu
      '(("a" "app"     "Applications")
-       ("b" "buffer"  "Buffers")
+       ("b" "buffer")
        ("c" "compile" "Compilation")
        ;;("d" )
        ;;("e" )
@@ -20,11 +26,12 @@
        ("g" "git"     "Version Control")
        ("p" "project")
        ("P" "package")
-       ("v" "View")
+       ("v" "view")
        ("w" "window")
-       ("x" "Text")
+       ("x" "text")
        ;; symbols
-       (">" "Shell")
+       (">" "shell")
+       ("!" "error")
        ))
   (let* ((key     (nth 0 lmenu))
          (name    (nth 1 lmenu))

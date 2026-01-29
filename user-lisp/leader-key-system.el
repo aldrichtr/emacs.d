@@ -7,6 +7,33 @@
 
 (require 'general)
 (require 'plist-x) ; Provides `plist-remove'
+(require 'config-options)
+
+;; Create the `global-def' to add global keys; keys available in every mode.
+(general-create-definer global-def
+  :keymap 'global-map
+  :states
+  '(normal visual motion operator
+           insert replace emacs hybrid iedit-insert)
+  )
+
+;; Create the `leader-menu' keybinding definition. functionality where commands
+;; are organized behind the leader `config:emacs-leader-key'
+(general-create-definer leader-menu
+  :states
+  '(normal visual motion operator
+           insert replace emacs hybrid iedit-insert)
+  :prefix config:emacs-leader-key
+  :non-normal-prefix config:emacs-leader-non-normal-key)
+
+;; Create the `major-mode-menu' keybinding definition.  Organize major-mode
+;; bindings behind the major-mode leader `config:emacs-local-leader-key'.
+(general-create-definer major-mode-menu
+  :states '(normal)
+  :prefix config:emacs-local-leader-key)
+
+
+;;; Leader menu system
 
 (defvar leader-menu-prefix-alist
   `(("leader-menu" . ,config:emacs-leader-key)))
@@ -56,7 +83,6 @@
 
 ;;; Keybinding macros
 
-
 (defmacro make-leader-menu (name key &rest body)
   "Create a keymap and general-define-key function for KEY.
 Creates a keymap named `leader-NAME-map' and a `general-definer' macro
@@ -69,7 +95,6 @@ BODY will be passed on to the definer macro, with the exception of these keys:
 
 - `:PARENT' The definer that we want to wrap
 - `:DISPLAY-NAME' The name displayed in which-key menus if not NAME."
-
   (declare (indent defun))
   (let* ((display-name  (or (plist-get body :display-name) name))
          (parent        (or (plist-get body :parent) 'leader-menu))
@@ -82,20 +107,19 @@ BODY will be passed on to the definer macro, with the exception of these keys:
          (keymap-name   (concat base-name "-map"))
          (parent-prefix (or (get-leader-menu-prefix (symbol-name parent)) ""))
          (prefix        (concat parent-prefix " " key))
-         ;;(prefix (concat (get-leader-menu-prefix 'parent) " " key))
-         ;; remove keys that do not belong to the general-create-definer macro
+         ;; remove keys that do not belong to the `general-create-definer' macro
          (body (plist-remove '(:display-name :parent) body)))
     (set-leader-menu-prefix definer-name prefix)
     ;; Create and execute the general definer
     `(progn
        (general-create-definer ,(intern definer-name)
-  ;;; Originally, I was using
-         ;; :wrapping ,(intern (symbol-name parent))
-         ;;:infix ,key
-  ;;; to create the leader-menu hierarchy, but that didn't work past the
-  ;;; first level. I think that is because the definer "unwraps" all the
-  ;;; way up the stack to the `leader-menu' definer, instead of the
-  ;;; parent.
+        ;; Originally, I was using
+        ;; :wrapping ,(intern (symbol-name parent))
+        ;; :infix ,key
+        ;; to create the leader-menu hierarchy, but that didn't work past the
+        ;; first level. I think that is because the definer "unwraps" all the
+        ;; way up the stack to the `leader-menu' definer, instead of the
+        ;; parent.
          :prefix-map (quote ,(intern keymap-name))
          :states '(normal)
          :prefix ,prefix
@@ -107,11 +131,11 @@ BODY will be passed on to the definer macro, with the exception of these keys:
 
 (defmacro add-leader-keys (name key &rest body)
   "This is like `make-leader-menu' but it does not create a definer or map.
-  NAME is the which-key name, KEY is key to bind, and BODY is the `general-def'
-  body.
+NAME is the which-key name, KEY is key to bind, and BODY is the `general-def'
+body.
 
-  - `:PARENT' The definer that we want to wrap
-  - `:DISPLAY-NAME' The name displayed in which-key menus if not NAME."
+- `:PARENT' The definer that we want to wrap
+- `:DISPLAY-NAME' The name displayed in which-key menus if not NAME."
   (declare (indent defun))
   (let* ((display-name  (or (plist-get body :display-name) name))
          (parent        (or (plist-get body :parent) 'leader-menu))

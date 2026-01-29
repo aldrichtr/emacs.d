@@ -1,7 +1,8 @@
 ;;; config-options.el --- Personal customization options for emacs  -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; This file sets the options that I feel will change regularly. It creates several customization options
+;; This file sets the options that I feel will change regularly.  It creates
+;; several customization options
 ;; in the `config:' group.
 
 ;;; Code:
@@ -37,6 +38,7 @@ Defaults to `XDG_DATA_HOME/emacs', `LOCALAPPDATA/emacs', or `~/.emacs.d'."
   :group 'config:emacs)
 
 ;;;; Also provided as functions for convenience
+
 (defun config/emacs-config-dir (&optional file)
   "Return path to `config:emacs-config-dir'.
 
@@ -276,13 +278,19 @@ config:emacs-icon-font-size)
 :type 'string
 :group 'config:emacs)
 
+;;; Keybinding system
+
 (defcustom config:emacs-leader-key "SPC"
 "The key used to trigger the leader menu."
 :type 'string
 :group 'config:emacs)
 
+(defcustom config:emacs-leader-non-normal-key "S-SPC"
+"The key used to trigger the leader menu."
+:type 'string
+:group 'config:emacs)
 
-(defcustom config:emacs-major-mode-leader-key ","
+(defcustom config:emacs-local-leader-key ","
 "The key used to trigger the leader menu for the current major-mode."
 :type 'string
 :group 'config:emacs)
