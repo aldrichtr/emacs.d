@@ -1,4 +1,4 @@
-;;; init.el --- My emacs configuration --- -*- lexical-binding: t -*-
+;;; init.el --- My emacs configuration -*- lexical-binding: t -*-
 
 ;;; Commentary:
 
@@ -16,7 +16,10 @@ user-mail-address "timothy.r.aldrich@gmail.com")
 (use-package config-options
   ;; Defines the config:* customization group
   :ensure nil
-  :demand t)
+  :demand t
+  :custom
+  (when (os-android-p)
+    (config:emacs-default-font-name "FiraCode Nerd Font Mono Regular")))
 
 
 
@@ -948,8 +951,8 @@ user-mail-address "timothy.r.aldrich@gmail.com")
   (defun dashboard-logo-today ()
     (let* ((image-dir (file-name-concat config:emacs-config-dir
                                         "assets" "images"))
-           (today-image (concat (format-time-string "%A") ".png")))
-      (expand-file-name (file-name-concat image-dir today-image))))
+           (today-image (concat (downcase (format-time-string "%A")) ".png")))
+      (file-truename (expand-file-name (file-name-concat image-dir today-image)))))
   :defer nil
   :custom
   (dashboard-startupify-list

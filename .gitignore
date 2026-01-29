@@ -17,8 +17,12 @@ eln-cache/
 
 auto-save-list/
 
+eshell/
+
 tramp
 
 # Org-mode files
+
+org-persist/
 
 .org-generic-id-locations
