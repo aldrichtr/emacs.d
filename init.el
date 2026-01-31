@@ -290,7 +290,6 @@ user-mail-address "timothy.r.aldrich@gmail.com")
          ;;("c" )
          ;;("d" )
          ;;("e" )
-         ("f" "file"    "Files")
          ("g" "git"     "Version Control")
          ("p" "project")
          ("v" "view")
@@ -310,15 +309,15 @@ user-mail-address "timothy.r.aldrich@gmail.com")
         (eval `(make-leader-menu ,name ,key :display-name ,display))))))
 
 (use-feature ;; Files menu
-  :general-config
-  (leader-file-menu
+  :general
+  (make-leader-menu "file" "f"
+    :display-name "Files"
     "."   '("Find this file" . ffap)
     "<"   '("Recent files"   . recentf-open)
     "d"   '("Dired"       . dirvish)
     "D"   '("Delete file" . delete-file-and-buffer)
     "f"   '("Find file"   . find-file)
-    "r"   '("Reload"      . revert-buffer-quick)
-    "M-R" '("Rename file" . rename-visited-file)
+    "M-r" '("Rename file" . rename-visited-file)
     "s"   '("save"        . evil-save)
     "S"   '("Save all"    . evil-write-all)
     "w"   '("Write"       . evil-write))
@@ -335,7 +334,7 @@ user-mail-address "timothy.r.aldrich@gmail.com")
     "f" '("Current file" . recover-this-file)
     "o" '("Other file"   . recover-file)
     "s" '("Session"      . recover-session))
-  (make-leader-menu "Emacs" "E"
+  (make-leader-menu "Emacs" "e"
     :parent leader-file-menu))
 
 (use-feature ;; Toggles menu
@@ -467,6 +466,7 @@ user-mail-address "timothy.r.aldrich@gmail.com")
 
 (use-package restart-emacs
   :defer nil
+  :requires (filesystem-x)
   :preface
   (defun restart-emacs-resume-layouts (&optional args)
     "Restart emacs and resume layouts."
@@ -491,6 +491,7 @@ user-mail-address "timothy.r.aldrich@gmail.com")
   :custom
   (inhibit-splash-screen t)
   (initial-major-mode 'emacs-lisp-mode)
+
   :general-config
   (add-leader-keys "quit" "q"
     :parent leader-emacs-menu
@@ -504,9 +505,9 @@ user-mail-address "timothy.r.aldrich@gmail.com")
 
   (add-leader-keys "Files" "f"
     :parent leader-emacs-menu
-    "i" '("Visit emacs init file" . visit-emacs-init)
-    "e" '("Visit early init" . (lambda () visit-emacs-file "early-init.el"))
-    "c" '("Visit customization file" . (lambda () visit-emacs-file "custom.el"))
+    "i" '("Visit init file" . visit-emacs-init)
+    "e" '("Visit early init" . visit-emacs-early-init)
+    "c" '("Visit customization file" . visit-emacs-custom-file)
     "d" '("Config dir" . (lambda () (consult-find config:emacs-config-dir)))
     "s" '("scratch buffer" . scratch-buffer)))
 
@@ -936,6 +937,7 @@ user-mail-address "timothy.r.aldrich@gmail.com")
     "q" '("kill"          . kill-current-buffer)
     "n" '("next"          . next-buffer)
     "p" '("prev"          . previous-buffer)
+    "r"   '("Reload"      . revert-buffer-quick)
     "i" '("imenu"         . ibuffer)
     ;; movement
     "K" 'buf-move-up
@@ -1933,6 +1935,12 @@ template file."
   :config
   (setq-local indent-tabs-mode t))
 
+;;;; mermaid
+
+(use-package mermaid-ts-mode
+  :custom
+  (mermaid-ts-indent-level 2))
+
 ;;;; yaml
 
 (use-package yaml-ts-mode
@@ -2049,14 +2057,8 @@ template file."
     "h" 'dired-gitignore-global-mode))
 
 (use-package dirvish
-  :requires (winum)
   :demand t
-  :preface
-  (defun winum-assign-9-to-dirvish-side ()
-    "Assign the dirvish-side window number 0"
-    (when (string-match-p (buffer-name) ".*\\*SIDE.*") 0))
   :config
-  (add-to-list 'winum-assign-functions #'winum-assign-9-to-dirvish-side)
   (dirvish-override-dired-mode t)
   (dirvish-peek-mode t)
   (dirvish-side-follow-mode t)

@@ -48,7 +48,7 @@
 
 (defun rename-file-and-buffer (buffer new-name)
   "Rename the selected BUFFER and its file to NEW-NAME.
-    If the buffer is not visiting a file, just rename the buffer."
+If the buffer is not visiting a file, just rename the buffer."
   (interactive
    (list
     (read-buffer "Select buffer (default: current): " (buffer-name) t)
@@ -70,9 +70,9 @@
 
 (defvar config:emacs-config-dir)
 
-(defun visit-emacs-file (&optional fname other-window)
+(defun visit-emacs-file (fname &optional other-window)
   "Visit the given FNAME found in the Emacs directory.  Defaults to `init.el'.
-    If OTHER-WINDOW open the file in a separate window."
+If OTHER-WINDOW open the file in a separate window."
   (let* ((file-name (or fname "init.el"))
          (emacs-file (file-name-concat config:emacs-config-dir file-name)))
     (if (file-exists-p emacs-file)
@@ -81,10 +81,24 @@
           (find-file emacs-file)))))
 
 (defun visit-emacs-init (&optional other-window)
-  "Open the Emacs init.el file.
-    If OTHER-WINDOW open the file in a separate window."
+  "Open the Emacs `init.el' file.
+If OTHER-WINDOW open the file in a separate window."
   (interactive)
   (visit-emacs-file "init.el" other-window))
+
+(defun visit-emacs-early-init (&optional other-window)
+  "Open the Emacs `early-init.el' file.
+If OTHER-WINDOW open the file in a separate window."
+  (interactive)
+  (visit-emacs-file "early-init.el" other-window))
+
+(defun visit-emacs-custom-file (&optional other-window)
+  "Open the Emacs `custom.el' file.
+If OTHER-WINDOW open the file in a separate window."
+  (interactive)
+  (visit-emacs-file "custom.el" other-window))
+
+
 (provide 'filesystem-x)
 
 ;;; filesystem-x.el ends here
