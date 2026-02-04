@@ -8,8 +8,8 @@
 ;;; Preliminaries
 
 (setopt
-user-full-name "Timothy R. Aldrich"
-user-mail-address "timothy.r.aldrich@gmail.com")
+ user-full-name "Timothy R. Aldrich"
+ user-mail-address "timothy.r.aldrich@gmail.com")
 
 ;;;; Config options
 
@@ -36,9 +36,6 @@ user-mail-address "timothy.r.aldrich@gmail.com")
   :demand t)
 (use-builtin package-metadata
   ;; Additional metadata
-  :demand t)
-(use-builtin leader-key-system
-  ;; Defines the macros used to create \"leader-key menus\"
   :demand t)
 
 ;;; Colors & Themes
@@ -201,6 +198,7 @@ user-mail-address "timothy.r.aldrich@gmail.com")
 
 (use-package evil-multiedit
   :requires (evil-mc)
+  :functions (evil-multiedit-default-keybinds)
   :config
   (evil-multiedit-default-keybinds)
   :pretty-hydra
@@ -276,84 +274,18 @@ user-mail-address "timothy.r.aldrich@gmail.com")
 (use-package evil-iedit-state)
 
 ;;;; Leader-Menu system
+(require 'leader-key-system)
+; (use-builtin leader-key-system
+;  ;;  Defines the macros used to create \"leader-key menus\"
+;  :demand t)
+(require 'config-keybindings)
 
-(use-feature ;; top-level leader menu
-  :general
-  (leader-menu
-    "=" '("Format buffer" . buffer-indent))
-  (require 'subr-x)
-  (dolist
-      ;; (KEY NAME DISPLAY-NAME)
-      (lmenu
-       '(("a" "app"     "Applications")
-         ("b" "buffer"  "Buffers")
-         ;;("c" )
-         ;;("d" )
-         ;;("e" )
-         ("g" "git"     "Version Control")
-         ("p" "project")
-         ("v" "view")
-         ("w" "window"  "Windows") ; and Frames
-         ("x" "text")
-         ;; symbols
-         (">" "shell")
-         ;; Caps
-         ("P" "package" "Packages")
-         ))
-    (let ((key     (nth 0 lmenu))
-          (name    (nth 1 lmenu))
-          (display (nth 2 lmenu)))
-      ;; I know there is probably a more succinct way to do this, but
-      (if (string-empty-p display)
-          (eval `(make-leader-menu ,name ,key ))
-        (eval `(make-leader-menu ,name ,key :display-name ,display))))))
-
-(use-feature ;; Files menu
-  :general
-  (make-leader-menu "file" "f"
-    :display-name "Files"
-    "."   '("Find this file" . ffap)
-    "<"   '("Recent files"   . recentf-open)
-    "d"   '("Dired"       . dirvish)
-    "D"   '("Delete file" . delete-file-and-buffer)
-    "f"   '("Find file"   . find-file)
-    "M-r" '("Rename file" . rename-visited-file)
-    "s"   '("save"        . evil-save)
-    "S"   '("Save all"    . evil-write-all)
-    "w"   '("Write"       . evil-write))
-
-  (make-leader-menu "Open" "o"
-    :parent leader-file-menu
-    "o" '("Other window" . find-file-other-window)
-    "w" '("Other window" . find-file-other-window)
-    "f" '("Other frame"  . find-file-other-frame)
-    "t" '("Other tab"    . find-file-other-tab)
-    )
-  (make-leader-menu "Recover" "R"
-    :parent leader-file-menu
-    "f" '("Current file" . recover-this-file)
-    "o" '("Other file"   . recover-file)
-    "s" '("Session"      . recover-session))
-  (make-leader-menu "Emacs" "e"
-    :parent leader-file-menu))
-
-(use-feature ;; Toggles menu
-  :general
-  (make-leader-menu "Toggles" "t"
-    "l" '("highlight line"  . hl-line-mode)
-    "m" '("toggle menu-bar" . menu-bar-mode)
-    "t" '("Toggle tool-bar" . tool-bar-mode)))
-
-(use-feature ;; line-number toggles
-  :general
-  ;; Line numbers
-  (add-leader-keys "Line numbers" "n"
-    :parent leader-toggles-menu
-    "r" '("relative" . menu-bar--display-line-numbers-mode-relative)
-    "a" '("absolute" . menu-bar--display-line-numbers-mode-absolute)
-    "v" '("visual"   . menu-bar--display-line-numbers-mode-visual)
-    "q" '("off"      . menu-bar--display-line-numbers-mode-none)))
-
+; (use-builtin config-keybindings
+;   :requires (leader-key-system)
+;   ;; top-level leader menu
+;   :demand t
+;   :init
+;   (generate-leader-menu))
 
 ;;;; Which-key
 
@@ -386,7 +318,7 @@ user-mail-address "timothy.r.aldrich@gmail.com")
   (which-key-posframe-border-width 2)
   :general
   (leader-toggles-menu
-    "k" '("wk posframe" . (lamda () which-key-posframe-mode)))
+   "k" '("wk posframe" . (lamda () which-key-posframe-mode)))
   :config
   (which-key-posframe-mode -1))
 
@@ -456,13 +388,10 @@ user-mail-address "timothy.r.aldrich@gmail.com")
 (use-builtin server
   :functions (server-running-p)
   :defines (config:emacs-server-run)
-  :custom
-  (server-use-tcp t)
-  (server-window 'pop-to-buffer)
   :config
-  (unless (server-running-p)
-    (if config:emacs-server-run
-        (add-hook 'after-init-hook 'server-start t))))
+  (unless (and (server-running-p)
+               config:emacs-server-run)
+    (add-hook 'after-init-hook 'server-start t)))
 
 (use-package restart-emacs
   :defer nil
@@ -501,15 +430,8 @@ user-mail-address "timothy.r.aldrich@gmail.com")
     "r" 'restart-emacs
     "R" 'restart-emacs-resume-layouts
     "t" 'restart-emacs-timed-requires
-    "T" 'restart-emacs-adv-timers)
+    "T" 'restart-emacs-adv-timers))
 
-  (add-leader-keys "Files" "f"
-    :parent leader-emacs-menu
-    "i" '("Visit init file" . visit-emacs-init)
-    "e" '("Visit early init" . visit-emacs-early-init)
-    "c" '("Visit customization file" . visit-emacs-custom-file)
-    "d" '("Config dir" . (lambda () (consult-find config:emacs-config-dir)))
-    "s" '("scratch buffer" . scratch-buffer)))
 
 ;;; UI Elements
 
@@ -541,7 +463,7 @@ user-mail-address "timothy.r.aldrich@gmail.com")
   :defines (config:emacs-default-font)
   :custom
   ;; We want the window manager to control the window (frame) size
-  (setopt frame-inhibit-implied-resize t)
+  (frame-inhibit-implied-resize t)
   :config
   (setq frame-title-format
         '(""
@@ -777,8 +699,7 @@ user-mail-address "timothy.r.aldrich@gmail.com")
     "M-6" 'winum-select-window-6
     "M-7" 'winum-select-window-7
     "M-8" 'winum-select-window-8
-    "M-9" 'winum-select-window-9
-    )
+    "M-9" 'winum-select-window-9)
   (leader-menu
     "1" '("Focus win 1" . winum-select-window-1)
     "2" '("Focus win 2" . winum-select-window-2)
@@ -825,65 +746,63 @@ user-mail-address "timothy.r.aldrich@gmail.com")
      ("_"  evil-window-set-height "set height"))))
   :general
   ;; ace-window has its own keymap that is built from aw-dispatch-alist
-  (make-leader-menu "Window" "w"
-    "RET" '("Jump to"     . ace-window)
-    ;; window size
-    "s"  '("menu"       . win-size-hydra/body)
-    "+"  '("+ height"   . evil-window-increase-height)
-    "-"  '("- height"   . evil-window-decrease-height)
-    "="  '("balanced"   . balance-windows)
-    "<"  '("< width"    . evil-window-decrease-width)
-    ">"  '("> width"    . evil-window-increase-width)
-    "_"  '("set height" . evil-window-set-height)
-    "|"  '("set width"  . evil-window-set-width)
+  (leader-window-menu
+   "RET" '("Jump to"     . ace-window)
+   ;; window size
+   "s"  '("menu"       . win-size-hydra/body)
+   "+"  '("+ height"   . evil-window-increase-height)
+   "-"  '("- height"   . evil-window-decrease-height)
+   "="  '("balanced"   . balance-windows)
+   "<"  '("< width"    . evil-window-decrease-width)
+   ">"  '("> width"    . evil-window-increase-width)
+   "_"  '("set height" . evil-window-set-height)
+   "|"  '("set width"  . evil-window-set-width)
 
-    ;; window navigation
-    "<up>"    '("up"   . evil-window-up)
-    "k"       '("up"   . evil-window-up)
-    "<down>"  '("down" . evil-window-down)
-    "j"       '("down" . evil-window-down)
-    "<left>"  '("left" . evil-window-left)
-    "l"       '("left" . evil-window-right)
-    "<right>" '("right". evil-window-right)
-    "h"       '("right". evil-window-left)
-    "w"       '("next" . evil-window-next)
-    "W"       '("prev" . evil-window-prev)
-    "p"       '("MRU"  . evil-window-mru)
-    "b"       '("bottom" . evil-window-bottom-right)
-    "t"       '("top"    . evil-window-top-left)
-    "x"       '("exchange . "evil-window-exchange)
+   ;; window navigation
+   "<up>"    '("up"   . evil-window-up)
+   "k"       '("up"   . evil-window-up)
+   "<down>"  '("down" . evil-window-down)
+   "j"       '("down" . evil-window-down)
+   "<left>"  '("left" . evil-window-left)
+   "l"       '("left" . evil-window-right)
+   "<right>" '("right". evil-window-right)
+   "h"       '("right". evil-window-left)
+   "w"       '("next" . evil-window-next)
+   "W"       '("prev" . evil-window-prev)
+   "p"       '("MRU"  . evil-window-mru)
+   "b"       '("bottom" . evil-window-bottom-right)
+   "t"       '("top"    . evil-window-top-left)
+   "x"       '("exchange . "evil-window-exchange)
 
-    ;; window movement
-    "S-<left>" '("move far left"  . evil-window-move-far-left)
-    "H"        '("move far left"  . evil-window-move-far-left)
-    "S-<down>" '("move bottom"    . evil-window-move-very-bottom)
-    "J"        '("move bottom"    . evil-window-move-very-bottom)
-    "S-<up>"   '("move top"       . evil-window-move-very-top)
-    "K"        '("move top"       . evil-window-move-very-top)
-    "S-<down>" '("move far right" . evil-window-move-far-right)
-    "L"        '("move far right" . evil-window-move-far-right)
-    "R"   '("rotate up"   . evil-window-rotate-upwards)
-    "r"   '("Rotate down" . evil-window-rotate-downwards)
-    ;; window creation
-    "s"   '("Split"     . evil-window-split)
-    "v"   '("VSplit"    . evil-window-vsplit)
-    "f"   '("Find File" . ffap-other-window)
-    "n"   '("New"       . evil-window-new)
-    ;; window destruction
-    "o"   '("Only"   . delete-other-windows)
-    "d"   '("Delete" . evil-window-delete)
-    "q"   '("Quit"   . evil-quit)
+   ;; window movement
+   "S-<left>" '("move far left"  . evil-window-move-far-left)
+   "H"        '("move far left"  . evil-window-move-far-left)
+   "S-<down>" '("move bottom"    . evil-window-move-very-bottom)
+   "J"        '("move bottom"    . evil-window-move-very-bottom)
+   "S-<up>"   '("move top"       . evil-window-move-very-top)
+   "K"        '("move top"       . evil-window-move-very-top)
+   "S-<down>" '("move far right" . evil-window-move-far-right)
+   "L"        '("move far right" . evil-window-move-far-right)
+   "R"   '("rotate up"   . evil-window-rotate-upwards)
+   "r"   '("Rotate down" . evil-window-rotate-downwards)
+   ;; window creation
+   "s"   '("Split"     . evil-window-split)
+   "v"   '("VSplit"    . evil-window-vsplit)
+   "f"   '("Find File" . ffap-other-window)
+   "n"   '("New"       . evil-window-new)
+   ;; window destruction
+   "o"   '("Only"   . delete-other-windows)
+   "d"   '("Delete" . evil-window-delete)
+   "q"   '("Quit"   . evil-quit)
 
-    ;; Tabs
-    ;; T          tab-window-detach
-    ;; g T        tab-bar-switch-to-prev-tab
-    ;; g t        evil-tab-next
-    )
+   ;; Tabs
+   ;; T          tab-window-detach
+   ;; g T        tab-bar-switch-to-prev-tab
+   ;; g t        evil-tab-next
+   )
   :config
   (ace-window-display-mode 1))
-;; ace-window ends here
 
-;; [[file:ui-ace-window.org::*Ace-window in a posframe][Ace-window in a posframe:1]]
 (use-builtin ace-window-posframe
   :functions
   (ace-window-posframe-enable)
@@ -902,25 +821,25 @@ user-mail-address "timothy.r.aldrich@gmail.com")
 
 (use-feature ; buffer
   :preface
-(defun buffer-indent ()
-  "Indent the entire buffer."
-  (interactive)
-  (save-excursion
-    (indent-region (point-min) (point-max) nil)))
+  (defun buffer-indent ()
+    "Indent the entire buffer."
+    (interactive)
+    (save-excursion
+      (indent-region (point-min) (point-max) nil)))
 
-(declare-function org-indent-region "org.el")
-(declare-function org-fill-element "org.el")
+  (declare-function org-indent-region "org.el")
+  (declare-function org-fill-element "org.el")
 
-(defun indent-and-fill-region ()
-  "Indent the region and then refill it."
-  (interactive)
-  (save-excursion
-    (cond ((derived-mode-p 'org-mode)
-           (org-indent-region (point-min) (point-max))
-           (org-fill-element))
-          (t
-           (indent-region (point-min) (point-max) nil)
-           (prog-fill-reindent-defun))))))
+  (defun indent-and-fill-region ()
+    "Indent the region and then refill it."
+    (interactive)
+    (save-excursion
+      (cond ((derived-mode-p 'org-mode)
+             (org-indent-region (point-min) (point-max))
+             (org-fill-element))
+            (t
+             (indent-region (point-min) (point-max) nil)
+             (prog-fill-reindent-defun))))))
 
 (use-package buffer-move
   :demand t
@@ -931,19 +850,19 @@ user-mail-address "timothy.r.aldrich@gmail.com")
   ;; TODO: Add other buffer commands in the centaur-tabs package
   :general
   (leader-buffer-menu
-    "b" '("switch buffer" . consult-buffer)
-    "B" '("other window"  . consult-buffer-other-window)
-    "d" '("delete"        . evil-delete-buffer)
-    "q" '("kill"          . kill-current-buffer)
-    "n" '("next"          . next-buffer)
-    "p" '("prev"          . previous-buffer)
-    "r"   '("Reload"      . revert-buffer-quick)
-    "i" '("imenu"         . ibuffer)
-    ;; movement
-    "K" 'buf-move-up
-    "J" 'buf-move-down
-    "L" 'buf-move-right
-    "H" 'buf-move-left))
+   "b" '("switch buffer" . consult-buffer)
+   "B" '("other window"  . consult-buffer-other-window)
+   "d" '("delete"        . evil-delete-buffer)
+   "q" '("kill"          . kill-current-buffer)
+   "n" '("next"          . next-buffer)
+   "p" '("prev"          . previous-buffer)
+   "r" '("reload"        . revert-buffer-quick)
+   "i" '("imenu"         . ibuffer)
+   ;; movement
+   "K" 'buf-move-up
+   "J" 'buf-move-down
+   "L" 'buf-move-right
+   "H" 'buf-move-left))
 
 (use-package dashboard
   :defines
@@ -1005,7 +924,7 @@ user-mail-address "timothy.r.aldrich@gmail.com")
                      (bookmarks . 5)))
   :general
   (leader-view-menu
-    "d" '("Dashboard" . dashboard-open))
+   "d" '("Dashboard" . dashboard-open))
 
   :config
   (dashboard-setup-startup-hook))
@@ -1013,31 +932,31 @@ user-mail-address "timothy.r.aldrich@gmail.com")
 (use-package harpoon
   :general
   (leader-buffer-menu
-    "1" '("harpoon 1" . harpoon-go-to-1)
-    "2" '("harpoon 2" . harpoon-go-to-2)
-    "3" '("harpoon 3" . harpoon-go-to-3)
-    "4" '("harpoon 4" . harpoon-go-to-4)
-    "5" '("harpoon 5" . harpoon-go-to-5)
-    "6" '("harpoon 6" . harpoon-go-to-6)
-    "h" '("harpoon menu" . harpoon-quick-menu-hydra)))
+   "1" '("harpoon 1" . harpoon-go-to-1)
+   "2" '("harpoon 2" . harpoon-go-to-2)
+   "3" '("harpoon 3" . harpoon-go-to-3)
+   "4" '("harpoon 4" . harpoon-go-to-4)
+   "5" '("harpoon 5" . harpoon-go-to-5)
+   "6" '("harpoon 6" . harpoon-go-to-6)
+   "h" '("harpoon menu" . harpoon-quick-menu-hydra)))
 
 (use-feature ; whitespace
   :preface
   (defun buffer-whitespace-clean ()
     "Remove trailing whitespace and convert any tabs to spaces.
 source: `http://steve.yegge.googlepages.com/my-dot-emacs-file'"
-  (interactive)
-  (untabify (point-min) (point-max))
-  (setq delete-trailing-lines t)
-  (delete-trailing-whitespace))
+    (interactive)
+    (untabify (point-min) (point-max))
+    (setq delete-trailing-lines t)
+    (delete-trailing-whitespace))
 
-(defun unfill-region (begin end)
-  "Remove all linebreaks in a region.
+  (defun unfill-region (begin end)
+    "Remove all linebreaks in a region.
 
 But leave paragraphs,indented text (quotes,code) and lines starting with an
 asterix (lists) intact from BEGIN to END."
-  (interactive "r")
-  (replace-regexp "\\([^\n]\\)\n\\([^ *\n]\\)" "\\1 \\2" nil begin end))
+    (interactive "r")
+    (replace-regexp "\\([^\n]\\)\n\\([^ *\n]\\)" "\\1 \\2" nil begin end))
 
   :custom
   (require-final-newline t)
@@ -1046,8 +965,8 @@ asterix (lists) intact from BEGIN to END."
   (tab-always-indent 'complete)
   (standard-indent 2)
   :general
-  (leader-toggles-menu
-    "w" 'whitespace-mode))
+  (leader-toggle-menu
+   "w" 'whitespace-mode))
 
 ;;;; Structure
 
@@ -1056,8 +975,6 @@ asterix (lists) intact from BEGIN to END."
   :hook ((prog-mode org-mode) . electric-pair-mode))
 
 (use-package colorful-mode
-  ;; :diminish
-  ;; :ensure t ; Optional
   :custom
   (colorful-use-prefix t)
   (colorful-only-strings 'only-prog)
@@ -1145,11 +1062,12 @@ asterix (lists) intact from BEGIN to END."
       ("-" writeroom-decrease-width "Narrower"))))
   :general
   (leader-view-menu
-    "z" '("Zen mode" . writeroom-mode))
+   "z" '("Zen mode" . writeroom-mode))
   (nmap write-room-mode-map
-    "M-+" 'writeroom-increase-width
-    "M--" 'writeroom-decrease-width
-    "M-#" '("Reset width" . writeroom-adjust-width)
+    "w"   '("Adjust width"   . write-room-width-hydra/body)
+    "M-+" '("increase width" . writeroom-increase-width)
+    "M--" '("decrease width" . writeroom-decrease-width)
+    "M-#" '("Reset width"    . writeroom-adjust-width)
     "M-?" '("Toggle modeline" . writeroom-toggle-mode-line)))
 
 ;;; Hooks & Advice
@@ -1218,17 +1136,19 @@ asterix (lists) intact from BEGIN to END."
           shell-prompt-pattern "PS .*>$"))
   :general-config
   (leader-shell-menu
-    "p" '("Powershell" . shell)
-    "e" '("Emacs shell" . eshell)))
+   "p" '("Powershell" . shell)
+   "e" '("Emacs shell" . eshell)))
 
 (use-builtin ielm
   :custom
   (ielm-history-file-name (file-name-concat config:emacs-local-dir
                                             "ielm-history.eld"))
   (ielm-prompt "λ")
+
   :general-config
   (leader-shell-menu
-    "i" '("IELM" . ielm))
+   "i" '("IELM" . ielm))
+
   (general-def ielm-map
     "C-RET" 'ielm-return
     "RET" 'ielm-return-for-effect))
@@ -1286,9 +1206,9 @@ asterix (lists) intact from BEGIN to END."
         (get-info                    . "winget show"))))
   :custom
   (system-packages-package-manager
-    (cond ((os-windows-p) 'winget)
-          ;; android (termux), or linux
-          (t 'apt))))
+   (cond ((os-windows-p) 'winget)
+         ;; android (termux), or linux
+         (t 'apt))))
 
 (use-package yequake
   :custom
@@ -1326,15 +1246,15 @@ asterix (lists) intact from BEGIN to END."
   :custom-face
   (helpful-heading ((t (:foreground "#28ABE3" :weight bold))))
   :general
-  (make-leader-menu "Help" "h"
-    "i" '("Info" . consult-info)
-    "." '("At point" . helpful-at-point)
-    "f" '("Function" . helpful-function)
-    "c" '("Command" . helpful-command)
-    "v" '("Variable" . helpful-variable)
-    "k" '("Key" . helpful-key)
-    "s" '("Symbol" . helpful-symbol)
-    "q" '("Quit help" . helpful-kill-buffers)))
+  (leader-help-menu
+   "i" '("Info" . consult-info)
+   "." '("At point" . helpful-at-point)
+   "f" '("Function" . helpful-function)
+   "c" '("Command" . helpful-command)
+   "v" '("Variable" . helpful-variable)
+   "k" '("Key" . helpful-key)
+   "s" '("Symbol" . helpful-symbol)
+   "q" '("Quit help" . helpful-kill-buffers)))
 
 ;;; Search
 
@@ -1373,7 +1293,7 @@ asterix (lists) intact from BEGIN to END."
   :general
   (general-def 'global
     "C-'" '("Mark surrounding..." . surround-mark)
-    "M-'" '("Surround with..." . surround-insert)
+    "M-'" '("Surround with..."    . surround-insert)
     "C-M-'" 'surround-keymap))
 
 (use-package drag-stuff
@@ -1382,10 +1302,9 @@ asterix (lists) intact from BEGIN to END."
   (drag-stuff-global-mode t)
   :general
   ;; TODO: is this a global-def?
-  (general-define-key
-   :states '(normal emacs visual insert)
-   "M-<up>" 'drag-stuff-up
-   "M-<down>" 'drag-stuff-down))
+  (global-def
+    "M-<up>" 'drag-stuff-up
+    "M-<down>" 'drag-stuff-down))
 
 ;;;; Completion
 
@@ -1448,7 +1367,7 @@ asterix (lists) intact from BEGIN to END."
   :after marginalia
   :config
   (nerd-icons-completion-mode 1)
- (add-hook 'marginalia-mode-hook #'nerd-icons-completion-marginalia-setup))
+  (add-hook 'marginalia-mode-hook #'nerd-icons-completion-marginalia-setup))
 
 ;;;;; Consult
 
@@ -1468,18 +1387,18 @@ asterix (lists) intact from BEGIN to END."
   (xref-show-xrefs-function #'consult-xref)
   (xref-show-definitions-function #'consult-xref)
   :general-config
-  (make-leader-menu "Search" "/"
-    "b" '("Bookmark"         . consult-bookmark)
-    "g" '("(rip)Grep"        . consult-ripgrep)
-    "h" '("History"          . consult-history)
-    "l" '("Line in buffer"   . consult-line)
-    "L" '("Lines in project" . consult-line-multi)
-    "m" '("Mark"             . consult-mark)
-    "o" '("Outline heading"  . consult-outline))
+  (leader-search-menu
+   "b" '("Bookmark"         . consult-bookmark)
+   "g" '("(rip)Grep"        . consult-ripgrep)
+   "h" '("History"          . consult-history)
+   "l" '("Line in buffer"   . consult-line)
+   "L" '("Lines in project" . consult-line-multi)
+   "m" '("Mark"             . consult-mark)
+   "o" '("Outline heading"  . consult-outline))
 
   ;; Theme
-  (leader-toggles-menu
-    "T" '("Theme" . consult-theme))
+  (leader-toggle-menu
+   "T" '("Theme" . consult-theme))
 
   :config
   (consult-customize consult-theme
@@ -1563,7 +1482,7 @@ project, or ask for a project if not in one."
   ;; Embark is actually not really about completion, but more like a "right-click"
   ;; menu function.  Perform an action on the given object.
   :general
-  (general-def 'global
+  (global-def
     "C-RET" '("Embark list" . embark-act)
     "M-."   '("embark"      . embark-dwim)
     "M-S-x" '("Describe bindings" . embark-bindings))
@@ -1631,13 +1550,13 @@ insert the given functions after it. Otherwise, insert them at the top."
   :custom
   (cape-file-directory-must-exit nil)
   :general
-  (general-def 'global
+  (global-def
     :prefix "C-c"
     "p" 'cape-prefix-map))
 
 
 (use-package citre
- ;; - citre is a completion companion for tags/global/etc.
+  ;; - citre is a completion companion for tags/global/etc.
   :hook
   (find-file . citre-auto-enable-citre-mode)
   :init
@@ -1680,8 +1599,8 @@ template file."
   :config
   (yas-global-mode 1)
   :general
-  (general-def
-    "M-/" '("Insert snippet" . consult-yasnippet)))
+  (global-def
+    "M-/" '("Select snippet" . consult-yasnippet)))
 
 ;;;; Text Correction
 
@@ -1689,14 +1608,12 @@ template file."
   :custom
   (ispell-choices-win-default-height 6)
   :config
-  (if (>= (string-to-number emacs-version) 30)
-      (setq text-mode-ispell-word-completion nil))
+  (when (>= (string-to-number emacs-version) 30)
+    (setq text-mode-ispell-word-completion nil))
   (setq ispell-program-name "aspell.exe")
   :general-config
-  (make-leader-menu "Text" "x") ;; TODO: move this up to , say.. text-mode
-
   (leader-text-menu
-    "$" '("Correct spelling" . ispell-completion-at-point)))
+   "$" '("Correct spelling" . ispell-completion-at-point)))
 
 (use-builtin dictionary
   :custom
@@ -1738,26 +1655,29 @@ template file."
                   (flycheck-previous-error)) "Last"))))
   :general
   (general-unbind '(normal insert) "C-c !")
-  (make-leader-menu "Error" "!"
-    "!"   '("Error menu" . flycheck-nav-hydra/body)
-    "C-c" 'flycheck-compile
-    "C-w" 'flycheck-copy-errors-as-kill
-    "?"   'flycheck-describe-checker
-    "C"   'flycheck-clear
-    "H"   'display-local-help
-    "V"   'flycheck-version
-    "c"   'flycheck-buffer
-    "e"   'flycheck-explain-error-at-point
-    "h"   'flycheck-display-error-at-point
-    "i"   'flycheck-manual
-    "l"   'flycheck-list-errors
-    "n"   'flycheck-next-error
-    "p"   'flycheck-previous-error
-    "s"   'flycheck-select-checker
-    "v"   'flycheck-verify-setup
-    "x"   'flycheck-disable-checker))
+  (leader-error-menu
+   "!"   '("Error menu" . flycheck-nav-hydra/body)
+   "C-c" 'flycheck-compile
+   "C-w" 'flycheck-copy-errors-as-kill
+   "?"   'flycheck-describe-checker
+   "C"   'flycheck-clear
+   "H"   'display-local-help
+   "V"   'flycheck-version
+   "c"   'flycheck-buffer
+   "e"   'flycheck-explain-error-at-point
+   "h"   'flycheck-display-error-at-point
+   "i"   'flycheck-manual
+   "l"   'flycheck-list-errors
+   "n"   'flycheck-next-error
+   "p"   'flycheck-previous-error
+   "s"   'flycheck-select-checker
+   "v"   'flycheck-verify-setup
+   "x"   'flycheck-disable-checker))
 
-(use-package flycheck-posframe)
+(use-package flycheck-posframe
+  :general-config
+  (leader-toggle-menu
+   "!" '("flycheck posframe" . flycheck-posframe-mode)))
 
 (use-package hl-todo
   ;; TODO: Add a toggle for hl-todo
@@ -2092,16 +2012,16 @@ template file."
       "~/.dotfiles/packages"))
   :general-config
   (leader-project-menu
-    "/" '("ripgrep"   . projectile-ripgrep)
-    "%" '("replace"   . projectile-replace)
-    ">" '("terminal"  . projectile-run-term)
-    "b" '("buffers"   . consult-projectile-switch-to-buffer)
-    "E" '("Edit config" . projectile-edit-dir-locals)
-    "f" '("find file" . projectile-find-file)
-    "o" '("occur"     . projectile-multi-occur)
-    "p" '("commander" . projectile-commander)
-    "s" '("toggle"    . projectile-toggle-between-implementation-and-test)
-    )
+   "/" '("ripgrep"   . projectile-ripgrep)
+   "%" '("replace"   . projectile-replace)
+   ">" '("terminal"  . projectile-run-term)
+   "b" '("buffers"   . consult-projectile-switch-to-buffer)
+   "E" '("Edit config" . projectile-edit-dir-locals)
+   "f" '("find file" . projectile-find-file)
+   "o" '("occur"     . projectile-multi-occur)
+   "p" '("commander" . projectile-commander)
+   "s" '("toggle"    . projectile-toggle-between-implementation-and-test)
+   )
   (add-leader-keys "Run" "r"
     :parent leader-project-menu
     "c" '("Compile" . projectile-compile-project)
@@ -2116,11 +2036,11 @@ template file."
   )
 
 (use-package projectile-refactor
- :after projectile
- :load-path config:emacs-user-lisp-dir)
+  :after projectile
+  :load-path config:emacs-user-lisp-dir)
 
 (use-package projectile-ripgrep
- :after projectile)
+  :after projectile)
 
 ;;;; Repositories
 
@@ -2232,19 +2152,19 @@ template file."
                     (insert (format "[[%s][%s]]" url text)))))))))))
 
   (defun org-syntax-convert-keyword-case (&optional upper)
-"Convert the case of all keywords to lowercase by default unless UPPER is non-nil."
-(interactive)
-(save-excursion
-  (goto-char (point-min))
-  (let ((count 0)
-        (case-fold-search nil))
-    (while (re-search-forward "^[ \t]*#\\+[A-Z_]+" nil t)
-      (unless (string-match-p "RESULTS" (match-string 0))
-        (if upper
-            (replace-match (downcase (match-string 0)) t)
-          (replace-match (upcase (match-string 0)) t))
-        (setq count (1+ count))))
-    (message "Replaced %d occurances" count))))
+    "Convert the case of all keywords to lowercase by default unless UPPER is non-nil."
+    (interactive)
+    (save-excursion
+      (goto-char (point-min))
+      (let ((count 0)
+            (case-fold-search nil))
+        (while (re-search-forward "^[ \t]*#\\+[A-Z_]+" nil t)
+          (unless (string-match-p "RESULTS" (match-string 0))
+            (if upper
+                (replace-match (downcase (match-string 0)) t)
+              (replace-match (upcase (match-string 0)) t))
+            (setq count (1+ count))))
+        (message "Replaced %d occurances" count))))
 
   :hook (org-mode . org-mode-setup)
 
@@ -2346,7 +2266,7 @@ template file."
     "i" 'visit-org-inbox
     "p" 'org-insert-link
     "y" 'org-store-link)
-  ;; This menu is under <major-mode-leader> which is currently `m'
+  ;; This menu is under `major-mode-leader', see `config:emacs-local-leader-key'
 
   (major-mode-menu org-mode-map ; "top-level" in org-mode menu
     "a" '("Agenda" . org-agenda)
@@ -2429,7 +2349,7 @@ template file."
 (use-package org-modern-indent
   :vc
   (:url "https://github.com/jdtsmith/org-modern-indent.git"
-   :branch main))
+        :branch main))
 
 ;;;; Org Agenda
 
@@ -2865,28 +2785,28 @@ template file."
       (when parent
         (file-name-concat dir (string-join '(parent ext) ".")))))
 
-(defun org-roam-convert-to-link (&optional arg)
-  "Replace word at point with an Org-roam link.
+  (defun org-roam-convert-to-link (&optional arg)
+    "Replace word at point with an Org-roam link.
 Without prefix ARG: look up node by title/alias, or create one if missing.
 With prefix ARG prompt with `completing-read` to choose a node."
-  (interactive "P")
-  (let* ((word (thing-at-point 'word t)))
-    (delete-region (beginning-of-thing 'word)
-                   (end-of-thing 'word))
-    (cond
-     ;; With prefix: let user choose
-     (arg
-      (let ((node (org-roam-node-read)))
-        (insert (org-roam-node-insert node))))
-     ;; Without prefix: auto lookup or create
-     (t
-      (let ((node (org-roam-node-from-title-or-alias word)))
-        (if node
-            (insert (org-roam-node-insert node))
-          (let ((new-node (org-roam-capture-
-                           :node (org-roam-node-create :title word)
-                           :props '(:immediate-finish t))))
-            (insert (org-roam-node-insert new-node)))))))))
+    (interactive "P")
+    (let* ((word (thing-at-point 'word t)))
+      (delete-region (beginning-of-thing 'word)
+                     (end-of-thing 'word))
+      (cond
+       ;; With prefix: let user choose
+       (arg
+        (let ((node (org-roam-node-read)))
+          (insert (org-roam-node-insert node))))
+       ;; Without prefix: auto lookup or create
+       (t
+        (let ((node (org-roam-node-from-title-or-alias word)))
+          (if node
+              (insert (org-roam-node-insert node))
+            (let ((new-node (org-roam-capture-
+                             :node (org-roam-node-create :title word)
+                             :props '(:immediate-finish t))))
+              (insert (org-roam-node-insert new-node)))))))))
   :custom
   (org-roam-link-auto-replace t) ; replace roam: with id:
 
@@ -2942,6 +2862,9 @@ With prefix ARG prompt with `completing-read` to choose a node."
   (major-mode-menu
     org-mode-map
     "V"   '("Roam UI" . org-roam-ui-open)))
+
+;; Used to list ids, etc. using org-mem
+(use-package inspector)
 
 (use-package org-mem
   :preface
@@ -3077,24 +3000,12 @@ With prefix ARG prompt with `completing-read` to choose a node."
 ;;; Finalize
 
 (use-feature ; load custom file
-    :init
-    ;; Put customizations into their own file
-    (setq custom-file (locate-user-emacs-file "custom.el"))
-    (unless (file-exists-p custom-file)
-      (with-temp-file custom-file
-        (insert "(custom-set-variables)")))
-    (load custom-file))
+  :init
+  ;; Put customizations into their own file
+  (setq custom-file (locate-user-emacs-file "custom.el"))
+  (unless (file-exists-p custom-file)
+    (with-temp-file custom-file
+      (insert "(custom-set-variables)")))
+  (load custom-file))
 
 ;;; init.el ends here
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(package-selected-packages nil))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(default ((t (:background nil)))))

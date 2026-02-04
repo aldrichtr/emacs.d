@@ -6,6 +6,8 @@
 
 .#.*
 
+# Compiled lisp
+*.el[cn]
 
 # Ephemeral Emacs dirs
 
