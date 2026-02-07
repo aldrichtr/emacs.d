@@ -126,19 +126,23 @@ BODY will be passed on to the definer macro, with the exception of these keys:
     (set-leader-menu-prefix definer-name prefix)
     ;; Create and execute the general definer
     `(progn
+       (message "Creating def for %s as %s under %s" ,definer-name ,display-name ,parent-prefix)
+       ;; (,parent ,key (quote (,display-name . ,(intern keymap-name))))
        (general-create-definer ,(intern definer-name)
          ;; Originally, I was using
          ;; :wrapping ,(intern (symbol-name parent))
          ;; :infix ,key
          ;; to create the leader-menu hierarchy, but that didn't work past the
          ;; first level. I think that is because the definer "unwraps" all the
-         ;; way up the stack to the `leader-menu' definer, instead of the
+         ;; way up the stack to the `leader-menu' definer , instead of the
          ;; parent.
-         :prefix-map (quote ,(intern keymap-name))
          :states '(normal)
          :prefix ,prefix
+         :prefix-map (quote ,(intern keymap-name))
          :wk-full-keys nil
-         nil '(:ignore t :which-key ,display-name))
+         "" '(:ignore t :which-key ,display-name)
+         ;; "" '(nil :which-key ,display-name)
+         )
        (,(intern definer-name)
         ,@body))))
 
@@ -157,11 +161,13 @@ body.
          ;; remove keys that do not belong to the `general-create-definer' macro
          (body          (plist-remove '(:display-name :parent) body)))
     `(progn
-       (general-define-key
+       (general-def
         :states '(normal)
         :prefix ,parent-prefix
         :infix ,key
-        nil '(:ignore t :which-key ,display-name)
+        :wk-full-keys nil
+        "" '(:ignore t :which-key ,display-name)
+        ;; "" '(nil :which-key ,display-name)
         ,@body))))
 
 (provide 'leader-key-system)

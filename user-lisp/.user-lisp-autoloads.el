@@ -73,6 +73,14 @@ body.
 ;;; Generated autoloads from projectile-refactor.el
 
 (register-definition-prefixes "projectile-refactor" '("projectile-"))
+
+
+;;; Generated autoloads from config-keybindings.el
+
+(autoload 'leader-key-menu-initialize "config-keybindings" "\
+Create the top-level leader-key menu.")
+(register-definition-prefixes "config-keybindings" '("config:emacs-leader-key-menu-list"))
+
 
 ;;; End of scraped data
 

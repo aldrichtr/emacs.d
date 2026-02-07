@@ -113,6 +113,7 @@
 ;;;; General
 
 (use-package general
+  :after evil
   :functions (leader-menu)
   :demand t
   :custom
@@ -274,27 +275,104 @@
 (use-package evil-iedit-state)
 
 ;;;; Leader-Menu system
-(require 'leader-key-system)
-; (use-builtin leader-key-system
-;  ;;  Defines the macros used to create \"leader-key menus\"
-;  :demand t)
-(require 'config-keybindings)
+ (use-builtin leader-key-system
+  ;;  Defines the macros used to create \"leader-key menus\"
+  :demand t)
 
-; (use-builtin config-keybindings
-;   :requires (leader-key-system)
-;   ;; top-level leader menu
-;   :demand t
-;   :init
-;   (generate-leader-menu))
+(use-feature ;; config-keybindings
+  :requires (leader-key-system)
+  :init
+;;;; Symbols
+;;;;; >
+  (make-leader-menu "shell" ">")
+;;;;; !
+  (make-leader-menu "error" "!")
+;;;;; /
+  (make-leader-menu "search" "/" :display-name "Search")
+;;;; Uppercase
+;;;;; F
+  (make-leader-menu "frame"   "F")
+;;;;; P
+  (make-leader-menu "package" "P")
+;;;;; Z
+  (make-leader-menu "quit"    "Z" :display-name "Quit")
+;;;; Lowercase
+;;;;; a
+  (make-leader-menu "app"     "a" :display-name "Applications")
+;;;;; b
+  (make-leader-menu "buffer"  "b")
+;;;;; c
+  (make-leader-menu "compile" "c" :display-name "Compilation")
+;;;;; d
+  (make-leader-menu "debug"   "d" :display-name "Debugging")
+;;;;; e
+  ;; (make-leader-menu "" "e")
+;;;;; f
+  (make-leader-menu "file" "f"
+    "."   '("Find this file" . ffap)
+    "<"   '("Recent files"   . recentf-open)
+    "d"   '("Dired"          . dirvish)
+    "D"   '("Delete file"    . delete-file-and-buffer)
+    "f"   '("Find file"      . find-file)
+    "M-r" '("Rename file"    . rename-visited-file)
+    "s"   '("save"           . evil-save)
+    "S"   '("Save all"       . evil-write-all)
+    "w"   '("Write"          . evil-write))
 
-;;;; Which-key
+  (add-leader-keys "Open" "o"
+    :parent leader-file-menu
+    "o" '("Other window" . find-file-other-window)
+    "w" '("Other window" . find-file-other-window)
+    "f" '("Other frame"  . find-file-other-frame)
+    "t" '("Other tab"    . find-file-other-tab))
+
+  (add-leader-keys "Recover" "R"
+    :parent leader-file-menu
+    "f" '("Current file" . recover-this-file)
+    "o" '("Other file"   . recover-file)
+    "s" '("Session"      . recover-session))
+
+  (add-leader-keys "Emacs" "e"
+    :parent leader-file-menu
+    "i" '("Visit init file"   . visit-emacs-init)
+    "e" '("Visit early init"  . visit-emacs-early-init)
+    "c" '("Visit custom file" . visit-emacs-custom-file)
+    "d" '("Config dir"        . (lambda () (consult-find config:emacs-config-dir)))
+    "s" '("scratch buffer"    . scratch-buffer))
+;;;;; g
+  (make-leader-menu "git" "g" :display-name "Version Control")
+;;;;; h
+  (make-leader-menu "help" "h" :display-name "Help")
+;;;;; p
+  (make-leader-menu "project" "p")
+;;;;; t
+  (make-leader-menu "toggle" "t"
+    "l" '("highlight line"  . hl-line-mode)
+    "m" '("toggle menu-bar" . menu-bar-mode)
+    "t" '("Toggle tool-bar" . tool-bar-mode))
+
+  (add-leader-keys "Line numbers" "n"
+    :parent leader-toggle-menu
+    "r" '("relative" . menu-bar--display-line-numbers-mode-relative)
+    "a" '("absolute" . menu-bar--display-line-numbers-mode-absolute)
+    "v" '("visual"   . menu-bar--display-line-numbers-mode-visual)
+    "q" '("off"      . menu-bar--display-line-numbers-mode-none))
+;;;;; v
+  (make-leader-menu "view"   "v")
+;;;;; w
+  (make-leader-menu "window" "w")
+;;;;; x
+  (make-leader-menu "text"   "x"))
+
+;;; Which-key
 
 (use-builtin which-key
   :custom
   (which-key-popup-type 'side-window)
-  (which-key-side-window-location 'bottom)
+  (which-key-side-window-location 'right)
+  (which-key-side-window-max-height 0.33)
   (which-key-show-remaining-keys t)
-  (which-key-sort-order 'which-key-key-order-alpha)
+  (which-key-sort-order 'which-key-key-order)
   (which-key-idle-delay 1.0)
   (which-key-add-column-padding 1)
   (which-key-separator "  ")
@@ -317,7 +395,7 @@
   (which-key-posframe-poshandler 'posframe-poshandler-frame-bottom-right-corner)
   (which-key-posframe-border-width 2)
   :general
-  (leader-toggles-menu
+  (leader-toggle-menu
    "k" '("wk posframe" . (lamda () which-key-posframe-mode)))
   :config
   (which-key-posframe-mode -1))
