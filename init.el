@@ -160,12 +160,13 @@
   (evil-want-fine-undo "yes")
   (evil-undo-system 'undo-fu)
   ;; Cursors
-  (evil-normal-state-cursor '(hollow     "moccasin"))
+  (evil-normal-state-cursor '(hollow     "PeachPuff"))
   (evil-visual-state-cursor '(box        "PapayaWhip"))
   (evil-insert-state-cursor '((hbar . 4) "PapayaWhip"))
   :config
   ;; TODO: Not sure this is needed since we set it via general
   (evil-set-leader 'normal (kbd "<SPC>") (kbd "M-<SPC>"))
+  ;; Start the minibuffer in insert mode
   (add-to-list 'evil-insert-state-modes 'minibuffer-mode)
   (evil-mode 1))
 
@@ -279,90 +280,36 @@
   ;;  Defines the macros used to create \"leader-key menus\"
   :demand t)
 
-(use-feature ;; config-keybindings
+(use-builtin config-keybindings
   :requires (leader-key-system)
-  :general
-;;;; Symbols
-;;;;; >
-  (make-leader-menu "shell" ">")
-;;;;; !
-  (make-leader-menu "error" "!")
-;;;;; /
-  (make-leader-menu "search" "/" :display-name "Search")
-;;;; Uppercase
-;;;;; F
-  (make-leader-menu "frame"   "F")
-;;;;; P
-  (make-leader-menu "package" "P")
-;;;;; Z
-  (make-leader-menu "quit"    "Z" :display-name "Quit")
-;;;; Lowercase
-;;;;; a
-  (make-leader-menu "app"     "a" :display-name "Applications")
-;;;;; b
-  (make-leader-menu "buffer"  "b")
-;;;;; c
-  (make-leader-menu "compile" "c" :display-name "Compilation")
-;;;;; d
-  (make-leader-menu "debug"   "d" :display-name "Debugging")
-;;;;; e
-  ;; (make-leader-menu "" "e")
-;;;;; f
-  (make-leader-menu "file" "f"
-    "."   '("Find this file" . ffap)
-    "<"   '("Recent files"   . recentf-open)
-    "d"   '("Dired"          . dirvish)
-    "D"   '("Delete file"    . delete-file-and-buffer)
-    "f"   '("Find file"      . find-file)
-    "M-r" '("Rename file"    . rename-visited-file)
-    "s"   '("save"           . evil-save)
-    "S"   '("Save all"       . evil-write-all)
-    "w"   '("Write"          . evil-write))
+  :demand t
+  :custom
+  (config:emacs-leader-key-menu-list
+  '(;; symbols
+    (">" "shell")
+    ("!" "error")
+    ("/" "search"  "Search")
+    ;; lowercase
+    ("a" "app"     "Applications")
+    ("b" "buffer")
+    ("c" "compile" "Compilation")
+    ;;("d" )
+    ;;("e" )
+    ("f" "file")
+    ("g" "git"     "Version Control")
+    ("h" "help"    "Help")
+    ("p" "project")
+    ("t" "toggle")
+    ("v" "view")
+    ("w" "window")
+    ("x" "text"    "Text")
+    ;; uppercase
+    ("F" "frame")
+    ("P" "package")
+    ("Z" "quit"    "Quit")))
+  :config
+  (leader-key-menu-initialize))
 
-  (add-leader-keys "Open" "o"
-    :parent leader-file-menu
-    "o" '("Other window" . find-file-other-window)
-    "w" '("Other window" . find-file-other-window)
-    "f" '("Other frame"  . find-file-other-frame)
-    "t" '("Other tab"    . find-file-other-tab))
-
-  (add-leader-keys "Recover" "R"
-    :parent leader-file-menu
-    "f" '("Current file" . recover-this-file)
-    "o" '("Other file"   . recover-file)
-    "s" '("Session"      . recover-session))
-
-  (add-leader-keys "Emacs" "e"
-    :parent leader-file-menu
-    "i" '("Visit init file"   . visit-emacs-init)
-    "e" '("Visit early init"  . visit-emacs-early-init)
-    "c" '("Visit custom file" . visit-emacs-custom-file)
-    "d" '("Config dir"        . (lambda () (consult-find config:emacs-config-dir)))
-    "s" '("scratch buffer"    . scratch-buffer))
-;;;;; g
-  (make-leader-menu "git" "g" :display-name "Version Control")
-;;;;; h
-  (make-leader-menu "help" "h" :display-name "Help")
-;;;;; p
-  (make-leader-menu "project" "p")
-;;;;; t
-  (make-leader-menu "toggle" "t"
-    "l" '("highlight line"  . hl-line-mode)
-    "m" '("toggle menu-bar" . menu-bar-mode)
-    "t" '("Toggle tool-bar" . tool-bar-mode))
-
-  (add-leader-keys "Line numbers" "n"
-    :parent leader-toggle-menu
-    "r" '("relative" . menu-bar--display-line-numbers-mode-relative)
-    "a" '("absolute" . menu-bar--display-line-numbers-mode-absolute)
-    "v" '("visual"   . menu-bar--display-line-numbers-mode-visual)
-    "q" '("off"      . menu-bar--display-line-numbers-mode-none))
-;;;;; v
-  (make-leader-menu "view"   "v")
-;;;;; w
-  (make-leader-menu "window" "w")
-;;;;; x
-  (make-leader-menu "text"   "x"))
 
 ;;; Which-key
 
@@ -438,7 +385,8 @@
   :config
   (recentf-mode))
 
-(use-builtin files ;; backups
+(use-builtin files
+  :demand t
   :custom
   (make-backup-files t)
   ;; only make backups if no version control
@@ -450,7 +398,39 @@
   (version-control t)
   (version-separator ".")
   (backup-directory-alist
-   `((".*" . ,config:emacs-backup-dir))))
+   `((".*" . ,config:emacs-backup-dir)))
+  :general
+  (leader-file-menu
+    "."   '("Find this file" . ffap)
+    "<"   '("Recent files"   . recentf-open)
+    "d"   '("Dired"          . dirvish)
+    "D"   '("Delete file"    . delete-file-and-buffer)
+    "f"   '("Find file"      . find-file)
+    "M-r" '("Rename file"    . rename-visited-file)
+    "s"   '("save"           . evil-save)
+    "S"   '("Save all"       . evil-write-all)
+    "w"   '("Write"          . evil-write))
+
+  (add-leader-keys "Open" "o"
+    :parent leader-file-menu
+    "o" '("Other window" . find-file-other-window)
+    "w" '("Other window" . find-file-other-window)
+    "f" '("Other frame"  . find-file-other-frame)
+    "t" '("Other tab"    . find-file-other-tab))
+
+  (add-leader-keys "Recover" "R"
+    :parent leader-file-menu
+    "f" '("Current file" . recover-this-file)
+    "o" '("Other file"   . recover-file)
+    "s" '("Session"      . recover-session))
+
+  (add-leader-keys "Emacs" "e"
+    :parent leader-file-menu
+    "i" '("Visit init file"   . visit-emacs-init)
+    "e" '("Visit early init"  . visit-emacs-early-init)
+    "c" '("Visit custom file" . visit-emacs-custom-file)
+    "d" '("Config dir"        . (lambda () (consult-find config:emacs-config-dir)))
+    "s" '("scratch buffer"    . scratch-buffer)))
 
 ;;; Package management
 
@@ -500,18 +480,31 @@
   (initial-major-mode 'emacs-lisp-mode)
 
   :general-config
-  (add-leader-keys "quit" "q"
-    :parent leader-emacs-menu
-    :display-name "Quit Emacs"
-    "q" 'save-buffers-kill-emacs
-    "d" 'restart-emacs-debug-init
-    "r" 'restart-emacs
-    "R" 'restart-emacs-resume-layouts
-    "t" 'restart-emacs-timed-requires
-    "T" 'restart-emacs-adv-timers))
+  (leader-quit-keys
+    "q" '("Save & quit" . save-buffers-kill-emacs)
+    "d" '("Restart with --debug-init" . restart-emacs-debug-init)
+    "r" '("Restart" . restart-emacs)
+    "R" '("Restart and resume" . restart-emacs-resume-layouts)
+    "t" '("Restart with timer" . restart-emacs-timed-requires)
+    "T" '("Restart with adv. timer" . restart-emacs-adv-timers)))
 
 
 ;;; UI Elements
+
+(use-feature ; toggles
+  :general
+  (leader-toggle-menu
+    "l" '("highlight line"  . hl-line-mode)
+    "m" '("toggle menu-bar" . menu-bar-mode)
+    "t" '("Toggle tool-bar" . tool-bar-mode))
+
+  (add-leader-keys "Line numbers" "n"
+    :parent leader-toggle-menu
+    "r" '("relative" . menu-bar--display-line-numbers-mode-relative)
+    "a" '("absolute" . menu-bar--display-line-numbers-mode-absolute)
+    "v" '("visual"   . menu-bar--display-line-numbers-mode-visual)
+    "q" '("off"      . menu-bar--display-line-numbers-mode-none))
+  )
 
 ;;;; Mouse & cursors
 
@@ -553,7 +546,10 @@
                      (abbreviate-file-name (buffer-file-name))))))
   (set-frame-font config:emacs-default-font nil t)
   (add-to-list 'default-frame-alist
-               `(font . ,config:emacs-default-font)))
+               `(font . ,config:emacs-default-font))
+  :general
+  (leader-frame-menu
+    "f" '("New" . make-frame-command)))
 
 (use-feature ; Android
   :functions (os-android-p)
@@ -617,11 +613,13 @@
   ;; when nil, use completing-read which is what lets consult
   ;; do the completions
   (centaur-tabs-enable-ido-completion nil)
-  (centaur-tabs-enable-key-bindings t)
+  (centaur-tabs-enable-key-bindings nil)
   :config
   ;;(centaur-tabs-change-fonts "Aldrich" 100)
   (centaur-tabs-enable-buffer-reordering)
+  (centaur-tabs-group-by-projectile-project)
   (centaur-tabs-headline-match)
+
   (defun centaur-tabs-hide-tab (x)
     "Do no to show buffer X in tabs."
     (let ((name (format "%s" x)))
@@ -631,6 +629,7 @@
 
        ;; Buffer name not match below blacklist.
        (string-prefix-p "*Compile-Log*" name)
+       (string-prefix-p "*Async-native-compile-Log*" name)
        (string-prefix-p "*lsp" name)
        (string-prefix-p "*Flycheck" name)
        (string-prefix-p "*tramp" name)
@@ -646,8 +645,16 @@
        )))
   :general
   (nmap
-    "g t" '("Next tab" . centaur-tabs-forward)
-    "g T" '("Prev tab" . centaur-tabs-backward)))
+    :prefix "gT"
+    ""   '(:ignore t :which-key "Tabs")
+    "b" '("First" . centaur-tabs-select-beg-tab)
+    "l" '("Last" . centaur-tabs-select-beg-tab)
+    "n" '("Next" . centaur-tabs-forward)
+    "p" '("Prev" . centaur-tabs-backward)
+    "<" '("Move left"  . centaur-tabs-move-current-tab-to-left)
+    ">" '("Move right" . centaur-tabs-move-current-tab-to-right)
+    "q" '("Quit"       . centaur-tabs-kill-all-buffers-in-current-group)
+    ))
 
 ;;;; Modeline
 
@@ -1050,7 +1057,10 @@ asterix (lists) intact from BEGIN to END."
 
 (use-package elec-pair
   :ensure nil
-  :hook ((prog-mode org-mode) . electric-pair-mode))
+  :hook ((prog-mode org-mode) . electric-pair-mode)
+  :general
+  (leader-toggle-menu
+    "e" '("Electric pair" . electric-pair-mode)))
 
 (use-package colorful-mode
   :custom
@@ -1092,7 +1102,7 @@ asterix (lists) intact from BEGIN to END."
   (rainbow-delimiters-depth-6-face ((t (:foreground "MediumOrchid"))))
   (rainbow-delimiters-depth-7-face ((t (:foreground "yellow"))))
   (rainbow-delimiters-depth-8-face ((t (:foreground "MediumSeaGreen"))))
-  (rainbow-delimiters-depth-9-face ((t (:foreground "tomato")))))
+  (rainbow-delimiters-depth-9-face ((t (:foreground "DodgerBlue")))))
 
 (use-builtin outline
   :preface
@@ -1150,24 +1160,33 @@ asterix (lists) intact from BEGIN to END."
 
 ;;; Hooks & Advice
 
+;;;; Advice
+
 (use-builtin advice
   :custom
   (ad-redefinition-action 'accept))
 
+;;;; Hooks
+
 (use-builtin simple ;; fundemental-mode
+  :require ws-butler
   :preface
   (defun fundamental-mode-setup ()
     "Define things that should be set in all modes."
     (setq-default tab-width 2
                   fill-column 80
                   tab-always-indent 'complete)
+    (ws-butler-mode)
     (display-line-numbers-mode 1)
     (display-fill-column-indicator-mode 1)
     (auto-fill-mode 1)
-    (outline-minor-mode))
+    (outline-minor-mode)))
+
+(use-feature ; before-save hook
   (defun setup-before-save ()
-    "Actions to take prior to saving the file."
-    (buffer-whitespace-clean))
+    "Actions to take prior to saving the file.")
+    ;; replaced with ws-butler
+    ;; (buffer-whitespace-clean))
   :hook (before-save . setup-before-save))
 
 (use-builtin text-mode
@@ -1334,6 +1353,9 @@ asterix (lists) intact from BEGIN to END."
    "s" '("Symbol" . helpful-symbol)
    "q" '("Quit help" . helpful-kill-buffers)))
 
+(use-package info-colors
+  :hook (Info-selection-hook . info-colors-fontify-node))
+
 ;;; Search
 
 (use-package avy)
@@ -1383,6 +1405,8 @@ asterix (lists) intact from BEGIN to END."
   (global-def
     "M-<up>" 'drag-stuff-up
     "M-<down>" 'drag-stuff-down))
+
+(use-package ws-butler)
 
 ;;;; Completion
 
@@ -2094,8 +2118,9 @@ template file."
    "%" '("replace"   . projectile-replace)
    ">" '("terminal"  . projectile-run-term)
    "b" '("buffers"   . consult-projectile-switch-to-buffer)
-   "E" '("Edit config" . projectile-edit-dir-locals)
+   "E" '("Config" . projectile-edit-dir-locals)
    "f" '("find file" . projectile-find-file)
+   "n" '("New"       . projectile-add-known-project)
    "o" '("occur"     . projectile-multi-occur)
    "p" '("commander" . projectile-commander)
    "s" '("toggle"    . projectile-toggle-between-implementation-and-test)
@@ -2120,8 +2145,19 @@ template file."
 (use-package projectile-ripgrep
   :after projectile)
 
+;;;; Editorconfig
+
+(use-builtin editorconfig
+  :config
+  (editorconfig-mode 1))
+
 ;;;; Repositories
 
+(use-builtin vc
+  :general
+  (leader-git-menu
+    "v" '("Version control" . vc-prefix-map))
+  )
 (use-package magit
   :after (nerd-icons)
   :custom

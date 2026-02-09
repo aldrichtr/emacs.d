@@ -23,6 +23,9 @@ eshell/
 
 tramp
 
+tree-sitter/
+
+
 # Org-mode files
 
 org-persist/

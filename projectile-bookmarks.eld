@@ -1,1 +1,1 @@
-("~/AppData/Roaming/emacs/")
+("~/projects/hkdb/" "~/AppData/Roaming/emacs/")

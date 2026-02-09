@@ -70,6 +70,9 @@
     (setq menu (symbol-name menu)))
   (cdr (assoc menu leader-menu-prefix-alist)))
 
+(defun set-leader-menu-prefix (menu prefix)
+  "Add the (MENU . PREFIX) to the `leader-menu-prefix-alist'."
+  (push (cons menu prefix) leader-menu-prefix-alist))
 
 (defun get-leader-menu-map (menu)
   "Return the map associated with MENU."
@@ -88,11 +91,6 @@
   (unless (stringp menu)
     (setq menu (symbol-name menu)))
   (string-replace "-menu" "-map" menu))
-
-
-(defun set-leader-menu-prefix (menu prefix)
-  "Add the (MENU . PREFIX) to the `leader-menu-prefix-alist'."
-  (push (cons menu prefix) leader-menu-prefix-alist))
 
 ;;; Keybinding macros
 
@@ -122,21 +120,20 @@ BODY will be passed on to the definer macro, with the exception of these keys:
          (keymap-name   (concat base-name "-map"))
          (parent-prefix (or (get-leader-menu-prefix (symbol-name parent)) ""))
          (prefix        (concat parent-prefix " " key))
+
          ;; remove keys that do not belong to the `general-create-definer' macro
          (body (plist-remove '(:display-name :parent) body)))
+
     (set-leader-menu-prefix definer-name prefix)
     ;; Create and execute the general definer
     `(progn
        (message "Creating def for %s as %s under %s" ,definer-name ,display-name ,parent-prefix)
-       ;; (,parent ,key (quote (,display-name . ,(intern keymap-name))))
        (general-create-definer ,(intern definer-name)
+         :prefix-map (quote ,(intern keymap-name))
          :states '(normal)
          :prefix ,prefix
-         :prefix-name ,display-name
-         :prefix-map (quote ,(intern keymap-name))
          :wk-full-keys nil
-         "" '(:ignore t :which-key ,display-name)
-         )
+         "" '(:ignore t :which-key ,display-name))
        (,(intern definer-name)
         ,@body))))
 
@@ -161,7 +158,6 @@ body.
         :infix ,key
         :wk-full-keys nil
         "" '(:ignore t :which-key ,display-name)
-        ;; "" '(nil :which-key ,display-name)
         ,@body))))
 
 (provide 'leader-key-system)
