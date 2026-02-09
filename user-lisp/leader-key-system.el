@@ -112,6 +112,7 @@ BODY will be passed on to the definer macro, with the exception of these keys:
   (declare (indent defun))
   (let* ((display-name  (or (plist-get body :display-name) (concat (capitalize name) "s")))
          (parent        (or (plist-get body :parent) 'leader-menu))
+
          ;; convert name to a lowercase-kebab string
          ;; File --> leader-file-menu , leader-file-map
          (base-name     (concat "leader-"
@@ -129,19 +130,12 @@ BODY will be passed on to the definer macro, with the exception of these keys:
        (message "Creating def for %s as %s under %s" ,definer-name ,display-name ,parent-prefix)
        ;; (,parent ,key (quote (,display-name . ,(intern keymap-name))))
        (general-create-definer ,(intern definer-name)
-         ;; Originally, I was using
-         ;; :wrapping ,(intern (symbol-name parent))
-         ;; :infix ,key
-         ;; to create the leader-menu hierarchy, but that didn't work past the
-         ;; first level. I think that is because the definer "unwraps" all the
-         ;; way up the stack to the `leader-menu' definer , instead of the
-         ;; parent.
          :states '(normal)
          :prefix ,prefix
+         :prefix-name ,display-name
          :prefix-map (quote ,(intern keymap-name))
          :wk-full-keys nil
          "" '(:ignore t :which-key ,display-name)
-         ;; "" '(nil :which-key ,display-name)
          )
        (,(intern definer-name)
         ,@body))))

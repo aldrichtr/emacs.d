@@ -281,7 +281,7 @@
 
 (use-feature ;; config-keybindings
   :requires (leader-key-system)
-  :init
+  :general
 ;;;; Symbols
 ;;;;; >
   (make-leader-menu "shell" ">")
