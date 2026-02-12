@@ -21,8 +21,6 @@
   (when (os-android-p)
     (config:emacs-default-font-name "FiraCode Nerd Font Mono Regular")))
 
-
-
 ;;;; Dependencies
 
 (dolist (pkg '(f s ts dash buttercup))
@@ -39,6 +37,8 @@
   :demand t)
 
 ;;; Colors & Themes
+
+;;;; Themes
 
 (dolist (theme (list "jetbrains-darcula"
                      "badger"
@@ -276,37 +276,39 @@
 (use-package evil-iedit-state)
 
 ;;;; Leader-Menu system
- (use-builtin leader-key-system
-  ;;  Defines the macros used to create \"leader-key menus\"
+
+(use-builtin leader-key-system
+  ;;  Defines the macros used to create leader-key menus.
   :demand t)
 
 (use-builtin config-keybindings
   :requires (leader-key-system)
   :demand t
+  :functions (leader-key-menu-initialize)
   :custom
   (config:emacs-leader-key-menu-list
-  '(;; symbols
-    (">" "shell")
-    ("!" "error")
-    ("/" "search"  "Search")
-    ;; lowercase
-    ("a" "app"     "Applications")
-    ("b" "buffer")
-    ("c" "compile" "Compilation")
-    ;;("d" )
-    ;;("e" )
-    ("f" "file")
-    ("g" "git"     "Version Control")
-    ("h" "help"    "Help")
-    ("p" "project")
-    ("t" "toggle")
-    ("v" "view")
-    ("w" "window")
-    ("x" "text"    "Text")
-    ;; uppercase
-    ("F" "frame")
-    ("P" "package")
-    ("Z" "quit"    "Quit")))
+   '(;; symbols
+     (">" "shell")
+     ("!" "error")
+     ("/" "search"  "Search")
+     ;; lowercase
+     ("a" "app"     "Applications")
+     ("b" "buffer")
+     ("c" "compile" "Compilation")
+     ;;("d" )
+     ;;("e" )
+     ("f" "file")
+     ("g" "git"     "Version Control")
+     ("h" "help"    "Help")
+     ("p" "project")
+     ("t" "toggle")
+     ("v" "view")
+     ("w" "window")
+     ("x" "text"    "Text")
+     ;; uppercase
+     ("F" "frame")
+     ("P" "package")
+     ("Z" "quit"    "Quit")))
   :config
   (leader-key-menu-initialize))
 
@@ -343,7 +345,7 @@
   (which-key-posframe-border-width 2)
   :general
   (leader-toggle-menu
-   "k" '("wk posframe" . (lamda () which-key-posframe-mode)))
+    "k" '("wk posframe" . (lamda () which-key-posframe-mode)))
   :config
   (which-key-posframe-mode -1))
 
@@ -434,12 +436,160 @@
 
 ;;; Package management
 
-(use-builtin package
-  :preface
-  (defun package-list-mode-setup()
-    "Setup the package list buffer"
-    (hl-line-mode 1))
-  :hook (package-menu-mode . package-list-mode-setup))
+;;;; Projects
+
+(use-package projectile
+  :custom
+  (projectile-dirconfig-file ".projectile")
+  (projectile-dirconfig-comment-prefix ";")
+  (projectile-project-search-path
+   '( "~/projects"
+      "~/repos"
+      "~/.dotfiles/packages"))
+  :general
+  (leader-project-menu
+    "/" '("ripgrep"   . projectile-ripgrep)
+    "%" '("replace"   . projectile-replace)
+    ">" '("terminal"  . projectile-run-term)
+    "b" '("buffers"   . consult-projectile-switch-to-buffer)
+    "E" '("Edit config" . projectile-edit-dir-locals)
+    "f" '("find file" . projectile-find-file)
+    "o" '("occur"     . projectile-multi-occur)
+    "p" '("commander" . projectile-commander)
+    "s" '("toggle"    . projectile-toggle-between-implementation-and-test)
+    )
+  (add-leader-keys "Run" "r"
+    :parent leader-project-menu
+    "c" '("Compile" . projectile-compile-project)
+    "t" '("Test"    . projectile-test-project)
+    "r" '("Run"     . projectile-run-project)
+    "i" '("Install" . projectile-install-project)
+
+    )
+  (add-leader-keys "Project list" "L"
+    :parent leader-project-menu
+    "c" '("Cleanup" . projectile-cleanup-known-projects)))
+
+;;;; Repository
+
+(use-package magit
+  :after (nerd-icons)
+  :custom
+  ((magit-format-file-function #'magit-format-file-nerd-icons))
+  :custom-face
+  (diff-added   ((t (:background "brown"))))
+  (diff-removed ((t (:background "DarkOliveGreen")))))
+
+(use-package magit-todos)
+
+(use-package magit-org-todos)
+
+(use-package forge
+  :defer t
+  :init
+  (setq forge-add-default-bindings nil))
+
+(use-package consult-gh
+  :after (consult)
+  :custom
+  (consult-gh-default-clone-directory
+   (file-name-concat (getenv "HOME") "projects"))
+  (consult-gh-show-preview                 t)
+  (consult-gh-preview-buffer-mode          'org-mode)
+  (consult-gh-preview-key                  "C-o")
+  (consult-gh-repo-action                  #'consult-gh--repo-browse-files-action)
+  (consult-gh-issue-action                 #'consult-gh--issue-view-action)
+  (consult-gh-pr-action                    #'consult-gh--pr-view-action)
+  (consult-gh-code-action                  #'consult-gh--code-view-action)
+  (consult-gh-file-action                  #'consult-gh--files-view-action)
+  (consult-gh-notifications-action         #'consult-gh--notifications-action)
+  (consult-gh-dashboard-action             #'consult-gh--dashboard-action)
+  (consult-gh-large-file-warning-threshold 2500000)
+  (consult-gh-prioritize-local-folder      'suggest)
+  :config
+  ;; Remember visited orgs and repos across sessions
+  (add-to-list 'savehist-additional-variables 'consult-gh--known-orgs-list)
+  (add-to-list 'savehist-additional-variables 'consult-gh--known-repos-list)
+  ;; Enable default keybindings (e.g. for commenting on issues, prs, ...)
+  (consult-gh-enable-default-keybindings))
+
+(use-package consult-gh-embark
+  :after (consult-gh)
+  :config
+  (consult-gh-embark-mode 1))
+
+(use-package consult-gh-forge
+  :after (consult-gh)
+  :delight
+  :custom
+  (consult-gh-forge-timeout-seconds 10)
+  :config
+  (consult-gh-forge-mode 1))
+
+;;;; File & Directory manager
+
+(use-builtin dired
+  :custom
+  (dired-auto-revert t)
+  (dired-kill-when-opening-new-dired-buffer t)
+  (dired-recursive-copies 'always)
+  (dired-recursive-deletes 'top)
+  (dired-dwim-target t)
+  (dired-mouse-drag-files t)
+  (dired-hide-details-mode t)
+  (dired-listing-switches "-alh")
+  :general
+  (general-unbind 'normal dired-mode-map "SPC"))
+
+(use-builtin dired-x
+  :after dired)
+
+(use-package dired-posframe
+  ;; This package is not very good.  Syntax highlighting doesnt work
+  ;; and it pops open like a million posframes
+  :disabled t
+  :hook (dired-mode)
+  :config
+  (add-to-list 'dired-posframe-enable-modes))
+
+;; dirvish has these already, so if you enable it, you'll end up with double icons for all the files
+(use-package nerd-icons-dired)
+
+(use-package dired-auto-readme
+  :defines (dired-auto-readme-file)
+  :config
+  (dired-auto-readme-mode 1)
+  (setq dired-auto-readme-file
+        '("readme\\.\\(org\\|rst\\|md\\|markdown\\)")))
+
+(use-package dired-gitignore
+  :general
+  (general-def
+    dired-mode-map
+    "h" 'dired-gitignore-global-mode))
+
+(use-package dirvish
+  :custom
+  (dirvish-attributes
+   '(vc-state file-size git-msg subtree-state nerd-icons collapse file-time))
+  (dirvish-mode-line-format
+   '(:left (sort symlink) :right (vc-info yank index)))
+  (dirvish-header-line-format
+   '(:left (path) :right (free-space)))
+  (dirvish-header-line-height '(25 . 35))
+  (dirvish-reuse-session nil)
+  (dirvish-side-width 38)
+  (dired-listing-switches
+   "-l --almost-all --human-readable --group-directories-first --no-group")
+  (dirvish-side-display-alist
+   '((side . right) (slot . -1)))
+  :general
+  (leader-menu
+    "0" '("Explorer" . dirvish-side))
+  :config
+  (dirvish-override-dired-mode t)
+  (dirvish-peek-mode t)
+  (dirvish-side-follow-mode t))
 
 ;;; Emacs Application
 
@@ -450,6 +600,9 @@
   (unless (and (server-running-p)
                config:emacs-server-run)
     (add-hook 'after-init-hook 'server-start t)))
+
+
+(use-builtin filesystem-x)
 
 (use-package restart-emacs
   :defer nil
@@ -480,7 +633,7 @@
   (initial-major-mode 'emacs-lisp-mode)
 
   :general-config
-  (leader-quit-keys
+  (leader-quit-menu
     "q" '("Save & quit" . save-buffers-kill-emacs)
     "d" '("Restart with --debug-init" . restart-emacs-debug-init)
     "r" '("Restart" . restart-emacs)
@@ -774,7 +927,7 @@
   :config
   :general
   ;; Use either Alt-[num] or SPC-[num] for switching windows
-  (global-def
+  (global-menu
     "M-0" '("Minibuffer" . winum-select-window-0)
     "M-1" 'winum-select-window-1
     "M-2" 'winum-select-window-2
@@ -795,11 +948,12 @@
     "7" '("Focus win 7" . winum-select-window-7)
     "8" '("Focus win 8" . winum-select-window-8)))
 
+
 (use-package ace-window
   :demand t
   :custom
   (aw-ignore-on t)
-  (aw-ignored-buffers '(treemacs-mode which-key-mode))
+  (aw-ignored-buffers '(which-key-mode))
   :init
   (defvar aw-dispatch-alist
     '((?x aw-delete-window "Delete Window")
@@ -832,59 +986,59 @@
   :general
   ;; ace-window has its own keymap that is built from aw-dispatch-alist
   (leader-window-menu
-   "RET" '("Jump to"     . ace-window)
-   ;; window size
-   "s"  '("menu"       . win-size-hydra/body)
-   "+"  '("+ height"   . evil-window-increase-height)
-   "-"  '("- height"   . evil-window-decrease-height)
-   "="  '("balanced"   . balance-windows)
-   "<"  '("< width"    . evil-window-decrease-width)
-   ">"  '("> width"    . evil-window-increase-width)
-   "_"  '("set height" . evil-window-set-height)
-   "|"  '("set width"  . evil-window-set-width)
+    "RET" '("Jump to"     . ace-window)
+    ;; window size
+    "s"  '("menu"       . win-size-hydra/body)
+    "+"  '("+ height"   . evil-window-increase-height)
+    "-"  '("- height"   . evil-window-decrease-height)
+    "="  '("balanced"   . balance-windows)
+    "<"  '("< width"    . evil-window-decrease-width)
+    ">"  '("> width"    . evil-window-increase-width)
+    "_"  '("set height" . evil-window-set-height)
+    "|"  '("set width"  . evil-window-set-width)
 
-   ;; window navigation
-   "<up>"    '("up"   . evil-window-up)
-   "k"       '("up"   . evil-window-up)
-   "<down>"  '("down" . evil-window-down)
-   "j"       '("down" . evil-window-down)
-   "<left>"  '("left" . evil-window-left)
-   "l"       '("left" . evil-window-right)
-   "<right>" '("right". evil-window-right)
-   "h"       '("right". evil-window-left)
-   "w"       '("next" . evil-window-next)
-   "W"       '("prev" . evil-window-prev)
-   "p"       '("MRU"  . evil-window-mru)
-   "b"       '("bottom" . evil-window-bottom-right)
-   "t"       '("top"    . evil-window-top-left)
-   "x"       '("exchange . "evil-window-exchange)
+    ;; window navigation
+    "<up>"    '("up"   . evil-window-up)
+    "k"       '("up"   . evil-window-up)
+    "<down>"  '("down" . evil-window-down)
+    "j"       '("down" . evil-window-down)
+    "<left>"  '("left" . evil-window-left)
+    "l"       '("left" . evil-window-right)
+    "<right>" '("right". evil-window-right)
+    "h"       '("right". evil-window-left)
+    "w"       '("next" . evil-window-next)
+    "W"       '("prev" . evil-window-prev)
+    "p"       '("MRU"  . evil-window-mru)
+    "b"       '("bottom" . evil-window-bottom-right)
+    "t"       '("top"    . evil-window-top-left)
+    "x"       '("exchange . "evil-window-exchange)
 
-   ;; window movement
-   "S-<left>" '("move far left"  . evil-window-move-far-left)
-   "H"        '("move far left"  . evil-window-move-far-left)
-   "S-<down>" '("move bottom"    . evil-window-move-very-bottom)
-   "J"        '("move bottom"    . evil-window-move-very-bottom)
-   "S-<up>"   '("move top"       . evil-window-move-very-top)
-   "K"        '("move top"       . evil-window-move-very-top)
-   "S-<down>" '("move far right" . evil-window-move-far-right)
-   "L"        '("move far right" . evil-window-move-far-right)
-   "R"   '("rotate up"   . evil-window-rotate-upwards)
-   "r"   '("Rotate down" . evil-window-rotate-downwards)
-   ;; window creation
-   "s"   '("Split"     . evil-window-split)
-   "v"   '("VSplit"    . evil-window-vsplit)
-   "f"   '("Find File" . ffap-other-window)
-   "n"   '("New"       . evil-window-new)
-   ;; window destruction
-   "o"   '("Only"   . delete-other-windows)
-   "d"   '("Delete" . evil-window-delete)
-   "q"   '("Quit"   . evil-quit)
+    ;; window movement
+    "S-<left>" '("move far left"  . evil-window-move-far-left)
+    "H"        '("move far left"  . evil-window-move-far-left)
+    "S-<down>" '("move bottom"    . evil-window-move-very-bottom)
+    "J"        '("move bottom"    . evil-window-move-very-bottom)
+    "S-<up>"   '("move top"       . evil-window-move-very-top)
+    "K"        '("move top"       . evil-window-move-very-top)
+    "S-<down>" '("move far right" . evil-window-move-far-right)
+    "L"        '("move far right" . evil-window-move-far-right)
+    "R"   '("rotate up"   . evil-window-rotate-upwards)
+    "r"   '("Rotate down" . evil-window-rotate-downwards)
+    ;; window creation
+    "s"   '("Split"     . evil-window-split)
+    "v"   '("VSplit"    . evil-window-vsplit)
+    "f"   '("Find File" . ffap-other-window)
+    "n"   '("New"       . evil-window-new)
+    ;; window destruction
+    "o"   '("Only"   . delete-other-windows)
+    "d"   '("Delete" . evil-window-delete)
+    "q"   '("Quit"   . evil-quit)
 
-   ;; Tabs
-   ;; T          tab-window-detach
-   ;; g T        tab-bar-switch-to-prev-tab
-   ;; g t        evil-tab-next
-   )
+    ;; Tabs
+    ;; T          tab-window-detach
+    ;; g T        tab-bar-switch-to-prev-tab
+    ;; g t        evil-tab-next
+    )
   :config
   (ace-window-display-mode 1))
 
@@ -904,7 +1058,7 @@
 
 ;;;; Buffers
 
-(use-feature ; buffer
+(use-feature ; buffer indenting
   :preface
   (defun buffer-indent ()
     "Indent the entire buffer."
@@ -924,7 +1078,10 @@
              (org-fill-element))
             (t
              (indent-region (point-min) (point-max) nil)
-             (prog-fill-reindent-defun))))))
+             (prog-fill-reindent-defun)))))
+  :general
+  (leader-menu
+    "=" '("Indent buffer" . buffer-indent)))
 
 (use-package buffer-move
   :demand t
@@ -935,19 +1092,19 @@
   ;; TODO: Add other buffer commands in the centaur-tabs package
   :general
   (leader-buffer-menu
-   "b" '("switch buffer" . consult-buffer)
-   "B" '("other window"  . consult-buffer-other-window)
-   "d" '("delete"        . evil-delete-buffer)
-   "q" '("kill"          . kill-current-buffer)
-   "n" '("next"          . next-buffer)
-   "p" '("prev"          . previous-buffer)
-   "r" '("reload"        . revert-buffer-quick)
-   "i" '("imenu"         . ibuffer)
-   ;; movement
-   "K" 'buf-move-up
-   "J" 'buf-move-down
-   "L" 'buf-move-right
-   "H" 'buf-move-left))
+    "b" '("switch buffer" . consult-buffer)
+    "B" '("other window"  . consult-buffer-other-window)
+    "d" '("delete"        . evil-delete-buffer)
+    "q" '("kill"          . kill-current-buffer)
+    "n" '("next"          . next-buffer)
+    "p" '("prev"          . previous-buffer)
+    "r" '("reload"        . revert-buffer-quick)
+    "i" '("imenu"         . ibuffer)
+    ;; movement
+    "K" 'buf-move-up
+    "J" 'buf-move-down
+    "L" 'buf-move-right
+    "H" 'buf-move-left))
 
 (use-package dashboard
   :defines
@@ -1009,7 +1166,7 @@
                      (bookmarks . 5)))
   :general
   (leader-view-menu
-   "d" '("Dashboard" . dashboard-open))
+    "d" '("Dashboard" . dashboard-open))
 
   :config
   (dashboard-setup-startup-hook))
@@ -1017,13 +1174,13 @@
 (use-package harpoon
   :general
   (leader-buffer-menu
-   "1" '("harpoon 1" . harpoon-go-to-1)
-   "2" '("harpoon 2" . harpoon-go-to-2)
-   "3" '("harpoon 3" . harpoon-go-to-3)
-   "4" '("harpoon 4" . harpoon-go-to-4)
-   "5" '("harpoon 5" . harpoon-go-to-5)
-   "6" '("harpoon 6" . harpoon-go-to-6)
-   "h" '("harpoon menu" . harpoon-quick-menu-hydra)))
+    "1" '("harpoon 1" . harpoon-go-to-1)
+    "2" '("harpoon 2" . harpoon-go-to-2)
+    "3" '("harpoon 3" . harpoon-go-to-3)
+    "4" '("harpoon 4" . harpoon-go-to-4)
+    "5" '("harpoon 5" . harpoon-go-to-5)
+    "6" '("harpoon 6" . harpoon-go-to-6)
+    "h" '("harpoon menu" . harpoon-quick-menu-hydra)))
 
 (use-feature ; whitespace
   :preface
@@ -1051,7 +1208,7 @@ asterix (lists) intact from BEGIN to END."
   (standard-indent 2)
   :general
   (leader-toggle-menu
-   "w" 'whitespace-mode))
+    "w" 'whitespace-mode))
 
 ;;;; Structure
 
@@ -1105,6 +1262,7 @@ asterix (lists) intact from BEGIN to END."
   (rainbow-delimiters-depth-9-face ((t (:foreground "DodgerBlue")))))
 
 (use-builtin outline
+  :functions (outline-font-lock-fontify-region)
   :preface
   (defvar outline-display-table (make-display-table))
   (set-display-table-slot outline-display-table 'selective-display
@@ -1112,6 +1270,10 @@ asterix (lists) intact from BEGIN to END."
   (defun set-outline-display-table ()
     "Add glyph to display table."
     (setf buffer-display-table outline-display-table))
+  (defun outline-mode-setup ()
+    "Setup the outline(-minor)? mode."
+    (set-outline-display-table)
+    (jit-lock-unregister #'outline-font-lock-fontify-region))
   :custom
   (outline-blank-line t)
   (outline-minor-mode-highlight t)
@@ -1121,10 +1283,9 @@ asterix (lists) intact from BEGIN to END."
     :prefix "z"
     "n" 'outline-forward-same-level
     "p" 'outline-backward-same-level)
-  :config
-
-  (add-hook 'outline-mode-hook 'set-outline-display-table)
-  (add-hook 'outline-minor-mode-hook 'set-outline-display-table))
+  :hook
+  ((outline-mode-hook outline-minor-mode-hook)
+   . outline-mode-setup))
 
 (use-package backline
   ;; backline is used in conjunction with `outline-minor-mode-highlight' to extend
@@ -1150,7 +1311,7 @@ asterix (lists) intact from BEGIN to END."
       ("-" writeroom-decrease-width "Narrower"))))
   :general
   (leader-view-menu
-   "z" '("Zen mode" . writeroom-mode))
+    "z" '("Zen mode" . writeroom-mode))
   (nmap write-room-mode-map
     "w"   '("Adjust width"   . write-room-width-hydra/body)
     "M-+" '("increase width" . writeroom-increase-width)
@@ -1168,40 +1329,19 @@ asterix (lists) intact from BEGIN to END."
 
 ;;;; Hooks
 
-(use-builtin simple ;; fundemental-mode
-  :require ws-butler
-  :preface
-  (defun fundamental-mode-setup ()
-    "Define things that should be set in all modes."
-    (setq-default tab-width 2
-                  fill-column 80
-                  tab-always-indent 'complete)
-    (ws-butler-mode)
-    (display-line-numbers-mode 1)
-    (display-fill-column-indicator-mode 1)
-    (auto-fill-mode 1)
-    (outline-minor-mode)))
+(use-builtin config-hook-functions
+  :demand t
+  :defer nil
+  :requires (ws-butler))
 
-(use-feature ; before-save hook
-  (defun setup-before-save ()
-    "Actions to take prior to saving the file.")
-    ;; replaced with ws-butler
-    ;; (buffer-whitespace-clean))
-  :hook (before-save . setup-before-save))
+
+(use-builtin simple ;; fundemental-mode
+  :hook (before-save .  before-save-setup))
 
 (use-builtin text-mode
-  :preface
-  (defun text-mode-setup ()
-    "Function to add commands to `text-mode-hook'."
-    (fundamental-mode-setup))
   :hook (text-mode . text-mode-setup))
 
 (use-builtin prog-mode
-  :preface
-  (defun prog-mode-setup ()
-    "Function to add commands to `prog-mode-hook'."
-    (fundamental-mode-setup))
-
   :hook (prog-mode . prog-mode-setup))
 
 
@@ -1217,7 +1357,7 @@ asterix (lists) intact from BEGIN to END."
 
 (use-package toggle-term
   :general
-  (global-def
+  (global-menu
     "C-`" '("Toggle term" . toggle-term-shell)))
 
 (use-package term-projectile)
@@ -1233,8 +1373,8 @@ asterix (lists) intact from BEGIN to END."
           shell-prompt-pattern "PS .*>$"))
   :general-config
   (leader-shell-menu
-   "p" '("Powershell" . shell)
-   "e" '("Emacs shell" . eshell)))
+    "p" '("Powershell" . shell)
+    "e" '("Emacs shell" . eshell)))
 
 (use-builtin ielm
   :custom
@@ -1244,7 +1384,7 @@ asterix (lists) intact from BEGIN to END."
 
   :general-config
   (leader-shell-menu
-   "i" '("IELM" . ielm))
+    "i" '("IELM" . ielm))
 
   (general-def ielm-map
     "C-RET" 'ielm-return
@@ -1325,13 +1465,22 @@ asterix (lists) intact from BEGIN to END."
   :ensure-system-package rg)
 
 (use-package parinfer-rust-mode
-  :disabled t
-  :init
-  (setq parinfer-rust-library-directory
-        (file-name-concat (getenv "HOME") ".cargo" "bin"))
-  :hook (emacs-lisp-mode clojure-mode)
+  :requires (flycheck)
+  :functions (flycheck-running-p flycheck-add-next-checker)
+  :hook (emacs-lisp-mode)
   :custom
-  (parinfer-rust-disable-troublesome-modes t))
+  (parinfer-rust-library-directory
+   (file-name-concat (getenv "HOME") ".cargo" "bin" "lib"))
+  (parinfer-rust-disable-troublesome-modes t)
+  :config
+  (when (flycheck-running-p)
+    (flycheck-add-next-checker 'emacs-lisp 'parinfer-rust t))
+  :general-config
+  (make-leader-menu "p" "Parinfer"
+    :parent leader-toggle-menu
+    "p" '("Toggle paren mode" . parinfer-rust-toggle-paren-mode)
+    "m" '("Switch mode"       . parinfer-rust-switch-mode)
+    "q" '("Disable"           . parinfer-rust-toggle-disable)))
 
 ;;; Documentation & Help
 
@@ -1344,14 +1493,14 @@ asterix (lists) intact from BEGIN to END."
   (helpful-heading ((t (:foreground "#28ABE3" :weight bold))))
   :general
   (leader-help-menu
-   "i" '("Info" . consult-info)
-   "." '("At point" . helpful-at-point)
-   "f" '("Function" . helpful-function)
-   "c" '("Command" . helpful-command)
-   "v" '("Variable" . helpful-variable)
-   "k" '("Key" . helpful-key)
-   "s" '("Symbol" . helpful-symbol)
-   "q" '("Quit help" . helpful-kill-buffers)))
+    "i" '("Info" . consult-info)
+    "." '("At point" . helpful-at-point)
+    "f" '("Function" . helpful-function)
+    "c" '("Command" . helpful-command)
+    "v" '("Variable" . helpful-variable)
+    "k" '("Key" . helpful-key)
+    "s" '("Symbol" . helpful-symbol)
+    "q" '("Quit help" . helpful-kill-buffers)))
 
 (use-package info-colors
   :hook (Info-selection-hook . info-colors-fontify-node))
@@ -1401,8 +1550,7 @@ asterix (lists) intact from BEGIN to END."
   :config
   (drag-stuff-global-mode t)
   :general
-  ;; TODO: is this a global-def?
-  (global-def
+  (global-menu
     "M-<up>" 'drag-stuff-up
     "M-<down>" 'drag-stuff-down))
 
@@ -1490,17 +1638,17 @@ asterix (lists) intact from BEGIN to END."
   (xref-show-definitions-function #'consult-xref)
   :general-config
   (leader-search-menu
-   "b" '("Bookmark"         . consult-bookmark)
-   "g" '("(rip)Grep"        . consult-ripgrep)
-   "h" '("History"          . consult-history)
-   "l" '("Line in buffer"   . consult-line)
-   "L" '("Lines in project" . consult-line-multi)
-   "m" '("Mark"             . consult-mark)
-   "o" '("Outline heading"  . consult-outline))
+    "b" '("Bookmark"         . consult-bookmark)
+    "g" '("(rip)Grep"        . consult-ripgrep)
+    "h" '("History"          . consult-history)
+    "l" '("Line in buffer"   . consult-line)
+    "L" '("Lines in project" . consult-line-multi)
+    "m" '("Mark"             . consult-mark)
+    "o" '("Outline heading"  . consult-outline))
 
   ;; Theme
   (leader-toggle-menu
-   "T" '("Theme" . consult-theme))
+    "T" '("Theme" . consult-theme))
 
   :config
   (consult-customize consult-theme
@@ -1530,7 +1678,7 @@ project, or ask for a project if not in one."
     (universal-argument-more); second C-u
     (consult-ripgrep))
   :general
-  (global-def
+  (global-menu
     "C-/" '("Search" . consult-rg-in-project))
   )
 
@@ -1584,7 +1732,7 @@ project, or ask for a project if not in one."
   ;; Embark is actually not really about completion, but more like a "right-click"
   ;; menu function.  Perform an action on the given object.
   :general
-  (global-def
+  (global-menu
     "C-RET" '("Embark list" . embark-act)
     "M-."   '("embark"      . embark-dwim)
     "M-S-x" '("Describe bindings" . embark-bindings))
@@ -1652,7 +1800,7 @@ insert the given functions after it. Otherwise, insert them at the top."
   :custom
   (cape-file-directory-must-exit nil)
   :general
-  (global-def
+  (global-menu
     :prefix "C-c"
     "p" 'cape-prefix-map))
 
@@ -1673,6 +1821,7 @@ insert the given functions after it. Otherwise, insert them at the top."
 
 (use-builtin autoinsert
   :demand t
+  :defer nil
   :requires yasnippet
   :preface
   (defun insert/expand-snippet ()
@@ -1701,7 +1850,7 @@ template file."
   :config
   (yas-global-mode 1)
   :general
-  (global-def
+  (global-menu
     "M-/" '("Select snippet" . consult-yasnippet)))
 
 ;;;; Text Correction
@@ -1715,7 +1864,7 @@ template file."
   (setq ispell-program-name "aspell.exe")
   :general-config
   (leader-text-menu
-   "$" '("Correct spelling" . ispell-completion-at-point)))
+    "$" '("Correct spelling" . ispell-completion-at-point)))
 
 (use-builtin dictionary
   :custom
@@ -1758,28 +1907,28 @@ template file."
   :general
   (general-unbind '(normal insert) "C-c !")
   (leader-error-menu
-   "!"   '("Error menu" . flycheck-nav-hydra/body)
-   "C-c" 'flycheck-compile
-   "C-w" 'flycheck-copy-errors-as-kill
-   "?"   'flycheck-describe-checker
-   "C"   'flycheck-clear
-   "H"   'display-local-help
-   "V"   'flycheck-version
-   "c"   'flycheck-buffer
-   "e"   'flycheck-explain-error-at-point
-   "h"   'flycheck-display-error-at-point
-   "i"   'flycheck-manual
-   "l"   'flycheck-list-errors
-   "n"   'flycheck-next-error
-   "p"   'flycheck-previous-error
-   "s"   'flycheck-select-checker
-   "v"   'flycheck-verify-setup
-   "x"   'flycheck-disable-checker))
+    "!"   '("Error menu" . flycheck-nav-hydra/body)
+    "C-c" 'flycheck-compile
+    "C-w" 'flycheck-copy-errors-as-kill
+    "?"   'flycheck-describe-checker
+    "C"   'flycheck-clear
+    "H"   'display-local-help
+    "V"   'flycheck-version
+    "c"   'flycheck-buffer
+    "e"   'flycheck-explain-error-at-point
+    "h"   'flycheck-display-error-at-point
+    "i"   'flycheck-manual
+    "l"   'flycheck-list-errors
+    "n"   'flycheck-next-error
+    "p"   'flycheck-previous-error
+    "s"   'flycheck-select-checker
+    "v"   'flycheck-verify-setup
+    "x"   'flycheck-disable-checker))
 
 (use-package flycheck-posframe
   :general-config
   (leader-toggle-menu
-   "!" '("flycheck posframe" . flycheck-posframe-mode)))
+    "!" '("flycheck posframe" . flycheck-posframe-mode)))
 
 (use-package hl-todo
   ;; TODO: Add a toggle for hl-todo
@@ -1898,6 +2047,7 @@ template file."
     ))
 
 (use-package clojure-ts-mode
+  :disabled t
   :preface
   (defun clojure-ts-mode-setup ()
     "Setup clojure treesitter mode."
@@ -1980,7 +2130,15 @@ template file."
   ((yaml-mode    . outline-yaml-minor-mode)
    (yaml-ts-mode . outline-yaml-minor-mode)))
 
+;;;; json
+
+(use-package json-mode
+  :hook (json-mode-hook . json-mode-setup)
+  :mode "\\.json\\'")
+
 ;;; Projects & Repositories
+
+
 
 ;;;; Language Servers
 
@@ -2036,182 +2194,6 @@ template file."
   ;; Disable the original in order to use the sideline package
   (setopt lsp-ui-sideline-enable nil))
 
-(use-package lsp-treemacs)
-
-(use-package consult-lsp)
-
-(use-builtin lsp-pwsh ; part of the lsp package
-  :custom
-  (lsp-pwsh-dir (file-name-concat (getenv "LOCALAPPDATA") "lsp" "pwsh"))
-  (lsp-pwsh-ext-path (file-name-concat (getenv "LOCALAPPDATA") "lsp" "pwsh"))
-  (lsp-pwsh-code-formatting-preset "OTBS")
-  (lsp-pwsh-code-formatting-use-correct-casing t))
-
-;;;; Directory Editor
-
-(use-builtin dired
-  :custom
-  (dired-auto-revert t)
-  (dired-kill-when-opening-new-dired-buffer t)
-  (dired-recursive-copies 'always)
-  (dired-recursive-deletes 'top)
-  (dired-dwim-target t)
-  (dired-mouse-drag-files t)
-  (dired-hide-details-mode t)
-  (dired-listing-switches "-alh")
-  :general
-  (general-unbind 'normal dired-mode-map "SPC"))
-
-(use-builtin dired-x
-  :after dired)
-
-(use-package dired-auto-readme
-  :defines (dired-auto-readme-file)
-  :config
-  (dired-auto-readme-mode 1)
-  (setq dired-auto-readme-file
-        '("readme\\.\\(org\\|rst\\|md\\|markdown\\)")))
-
-(use-package dired-gitignore
-  :general
-  (general-def
-    dired-mode-map
-    "h" 'dired-gitignore-global-mode))
-
-(use-package dirvish
-  :demand t
-  :config
-  (dirvish-override-dired-mode t)
-  (dirvish-peek-mode t)
-  (dirvish-side-follow-mode t)
-  :custom
-  (dirvish-attributes
-   '(vc-state file-size git-msg subtree-state nerd-icons collapse file-time))
-  (dirvish-mode-line-format
-   '(:left (sort symlink) :right (vc-info yank index)))
-  (dirvish-header-line-format
-   '(:left (path) :right (free-space)))
-  (dirvish-header-line-height '(25 . 35))
-  (dirvish-reuse-session nil)
-  (dirvish-side-width 38)
-  (dired-listing-switches
-   "-l --almost-all --human-readable --group-directories-first --no-group")
-  (dirvish-side-display-alist
-   '((side . right) (slot . -1)))
-  :general
-  (leader-menu
-    "0" '("Explorer" . dirvish-side)))
-
-;;;; Projects
-
-(use-package projectile
-  :custom
-  (projectile-dirconfig-file ".projectile")
-  (projectile-dirconfig-comment-prefix ";")
-  (projectile-project-search-path
-   '( "~/projects"
-      "~/repos"
-      "~/.dotfiles/packages"))
-  :general-config
-  (leader-project-menu
-   "/" '("ripgrep"   . projectile-ripgrep)
-   "%" '("replace"   . projectile-replace)
-   ">" '("terminal"  . projectile-run-term)
-   "b" '("buffers"   . consult-projectile-switch-to-buffer)
-   "E" '("Config" . projectile-edit-dir-locals)
-   "f" '("find file" . projectile-find-file)
-   "n" '("New"       . projectile-add-known-project)
-   "o" '("occur"     . projectile-multi-occur)
-   "p" '("commander" . projectile-commander)
-   "s" '("toggle"    . projectile-toggle-between-implementation-and-test)
-   )
-  (add-leader-keys "Run" "r"
-    :parent leader-project-menu
-    "c" '("Compile" . projectile-compile-project)
-    "t" '("Test"    . projectile-test-project)
-    "r" '("Run"     . projectile-run-project)
-    "i" '("Install" . projectile-install-project)
-
-    )
-  (add-leader-keys "Project list" "L"
-    :parent leader-project-menu
-    "c" '("Cleanup" . projectile-cleanup-known-projects))
-  )
-
-(use-package projectile-refactor
-  :after projectile
-  :load-path config:emacs-user-lisp-dir)
-
-(use-package projectile-ripgrep
-  :after projectile)
-
-;;;; Editorconfig
-
-(use-builtin editorconfig
-  :config
-  (editorconfig-mode 1))
-
-;;;; Repositories
-
-(use-builtin vc
-  :general
-  (leader-git-menu
-    "v" '("Version control" . vc-prefix-map))
-  )
-(use-package magit
-  :after (nerd-icons)
-  :custom
-  ((magit-format-file-function #'magit-format-file-nerd-icons))
-  :custom-face
-  (diff-added   ((t (:background "brown"))))
-  (diff-removed ((t (:background "DarkOliveGreen"))))
-  )
-
-(use-package magit-todos)
-
-(use-package magit-org-todos)
-
-(use-package forge
-  :defer t
-  :init
-  (setq forge-add-default-bindings nil))
-
-(use-package consult-gh
-  :after (consult)
-  :custom
-  (consult-gh-default-clone-directory
-   (file-name-concat (getenv "HOME") "projects"))
-  (consult-gh-show-preview                 t)
-  (consult-gh-preview-buffer-mode          'org-mode)
-  (consult-gh-preview-key                  "C-o")
-  (consult-gh-repo-action                  #'consult-gh--repo-browse-files-action)
-  (consult-gh-issue-action                 #'consult-gh--issue-view-action)
-  (consult-gh-pr-action                    #'consult-gh--pr-view-action)
-  (consult-gh-code-action                  #'consult-gh--code-view-action)
-  (consult-gh-file-action                  #'consult-gh--files-view-action)
-  (consult-gh-notifications-action         #'consult-gh--notifications-action)
-  (consult-gh-dashboard-action             #'consult-gh--dashboard-action)
-  (consult-gh-large-file-warning-threshold 2500000)
-  (consult-gh-prioritize-local-folder      'suggest)
-  :config
-  ;; Remember visited orgs and repos across sessions
-  (add-to-list 'savehist-additional-variables 'consult-gh--known-orgs-list)
-  (add-to-list 'savehist-additional-variables 'consult-gh--known-repos-list)
-  ;; Enable default keybindings (e.g. for commenting on issues, prs, ...)
-  (consult-gh-enable-default-keybindings))
-
-(use-package consult-gh-embark
-  :after (consult-gh)
-  :config
-  (consult-gh-embark-mode 1))
-
-(use-package consult-gh-forge
-  :after (consult-gh)
-  :delight
-  :custom
-  (consult-gh-forge-timeout-seconds 10)
-  :config
-  (consult-gh-forge-mode 1))
 
 ;;; Personal Information management
 
@@ -3043,35 +3025,35 @@ With prefix ARG prompt with `completing-read` to choose a node."
            "\\|^#\\+" ; start of property line
            "\\(?:"
            "setupfile"
-           "\\|startup"
-           "\\|title"
-           "\\|property"
-           "\\|index"
-           "\\|link"
+           ;;          "\\|startup"
+           ;;          "\\|title"
+           ;;          "\\|property"
+           ;;          "\\|index"
+           ;;          "\\|link"
            "\\|category"
-           "\\|filetags"
-           "\\|id"
-           "\\|updated"
-           "\\|created"
+           ;;          "\\|filetags"
+           ;;          "\\|id"
+           ;;          "\\|updated"
+           ;;          "\\|created"
            "\\)"
            ":.*$" ; end of property line
 
            ;; Properties block
            "\\|^:PROPERTIES:\\(.\\|\r?\n\\)+:END:.*$"
 
-           ;; strip the keyword but not the
-           ;; content
+           ;;          ;; strip the keyword but not the
+           ;;          ;; content
            "\\|^#\\+desc: "
            "\\|^#\\+description: "
            "\\|^#\\+subtitle: "
-           "\\|^#\\+summary: "
-           ;; blocks
-           "\\|^[\t ]*#\\+\\(?:" ; start of property line
-           "\\|begin_"
-           "\\|end_"
-           "\\).*$"
-           ;; any line starting with something other than #
-           "\\|^[^#].*$"
+           ;;          "\\|^#\\+summary: "
+           ;;          ;; blocks
+           ;;          "\\|^[\t ]*#\\+\\(?:" ; start of property line
+           ;;          "\\|begin_"
+           ;;          "\\|end_"
+           ;; "\\).*$"
+           ;;          ;; any line starting with something other than #
+           ;;          "\\|^[^#].*$"
            "\\)"))
   ;; Creating new files
   (deft-file-naming-rules '((noslash . ".")

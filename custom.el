@@ -22,21 +22,21 @@
                      evil-multiedit evil-numbers flycheck-clj-kondo
                      flycheck-hl-todo flycheck-posframe general git-modes
                      harpoon helpful highlight-indent-guides info-colors
-                     inspector jetbrains-darcula-theme lsp-treemacs lsp-ui
-                     magit-org-todos magit-todos major-mode-hydra marginalia
-                     mermaid-ts-mode multi-term nerd-icons-completion
+                     inspector jetbrains-darcula-theme json-mode lsp-treemacs
+                     lsp-ui magit-org-todos magit-todos major-mode-hydra
+                     marginalia mermaid-ts-mode multi-term nerd-icons-completion
                      nerd-icons-corfu nerd-icons-dired nnhackernews
                      nushell-ts-mode ob-powershell ob-rust orderless
                      org-cliplink org-clock-today org-context org-download
                      org-gcal org-kanban org-mem org-modern org-modern-indent
                      org-ql org-recur org-roam-ui org-transclusion outline-yaml
-                     powershell projectile-ripgrep rainbow-delimiters
-                     restart-emacs sideline-flycheck sublime-themes surround
-                     system-packages term-projectile toggle-term treemacs-evil
-                     treemacs-nerd-icons treemacs-projectile treesit-auto
-                     undo-fu vertico-posframe which-key-posframe winum
-                     writeroom-mode ws-butler yasnippet-capf yequake
-                     zenburn-theme))
+                     parinfer-rust-mode powershell projectile-ripgrep
+                     rainbow-delimiters restart-emacs sideline-flycheck
+                     sublime-themes surround system-packages term-projectile
+                     toggle-term treemacs-evil treemacs-nerd-icons
+                     treemacs-projectile treesit-auto undo-fu vertico-posframe
+                     which-key-posframe winum writeroom-mode ws-butler
+                     yasnippet-capf yequake zenburn-theme))
  '(powershell-indent-level 2 nil nil "Customized with use-package powershell"))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.

@@ -82,6 +82,25 @@ Create the top-level leader-key menu.")
 (register-definition-prefixes "config-keybindings" '("config:emacs-leader-key-menu-list"))
 
 
+;;; Generated autoloads from config-hook-functions.el
+
+(autoload 'fundamental-mode-setup "config-hook-functions" "\
+Define things that should be set in all modes.")
+(autoload 'text-mode-setup "config-hook-functions" "\
+Function to add commands to `text-mode-hook'.")
+(autoload 'prog-mode-setup "config-hook-functions" "\
+Function to add commands to `prog-mode-hook'.")
+(autoload 'package-list-mode-setup "config-hook-functions" "\
+Setup the package list buffer.")
+(autoload 'json-mode-setup "config-hook-functions" "\
+Setup the json mode.")
+(register-definition-prefixes "config-hook-functions" '("before-save-setup"))
+
+
+;;; Generated autoloads from use-config.el
+
+(register-definition-prefixes "use-config" '("config:user-config-dir" "create-" "use-config"))
+
 ;;; End of scraped data
 
 (provide '.user-lisp-autoloads)

@@ -24,7 +24,7 @@
 ;; Create the `global-def' to add global keys; keys available in every mode.
 
 ;; TODO: maybe this should be `global-menu'?
-(general-create-definer global-def
+(general-create-definer global-menu
   :keymap 'global-map
   :states
   '(normal visual motion operator
