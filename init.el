@@ -11,12 +11,17 @@
  user-full-name "Timothy R. Aldrich"
  user-mail-address "timothy.r.aldrich@gmail.com")
 
+;; Defines convenience `use-package' macros
+(require 'package-macros)
+
+(require 'package-metadata)
+
+(require 'leader-key-system)
+
 ;;;; Config options
 
-(use-package config-options
-  ;; Defines the config:* customization group
-  :ensure nil
-  :demand t
+
+(use-builtin config-options
   :custom
   (when (os-android-p)
     (config:emacs-default-font-name "FiraCode Nerd Font Mono Regular")))
@@ -27,14 +32,6 @@
   (eval `(use-package ,pkg
            :ensure t
            :defer nil)))
-
-(use-package package-macros
-  ;; Defines convenience `use-package' macros
-  :ensure nil
-  :demand t)
-(use-builtin package-metadata
-  ;; Additional metadata
-  :demand t)
 
 ;;; Colors & Themes
 
@@ -81,6 +78,7 @@
   (doom-themes-enable-italic t))
 
 ;;;; icons
+
 (use-package nerd-icons
   :defines
   (config:emacs-icon-font-name)
@@ -164,7 +162,6 @@
   (evil-visual-state-cursor '(box        "PapayaWhip"))
   (evil-insert-state-cursor '((hbar . 4) "PapayaWhip"))
   :config
-  ;; TODO: Not sure this is needed since we set it via general
   (evil-set-leader 'normal (kbd "<SPC>") (kbd "M-<SPC>"))
   ;; Start the minibuffer in insert mode
   (add-to-list 'evil-insert-state-modes 'minibuffer-mode)
@@ -275,45 +272,8 @@
 
 (use-package evil-iedit-state)
 
-;;;; Leader-Menu system
 
-(use-builtin leader-key-system
-  ;;  Defines the macros used to create leader-key menus.
-  :demand t)
-
-(use-builtin config-keybindings
-  :requires (leader-key-system)
-  :demand t
-  :functions (leader-key-menu-initialize)
-  :custom
-  (config:emacs-leader-key-menu-list
-   '(;; symbols
-     (">" "shell")
-     ("!" "error")
-     ("/" "search"  "Search")
-     ;; lowercase
-     ("a" "app"     "Applications")
-     ("b" "buffer")
-     ("c" "compile" "Compilation")
-     ;;("d" )
-     ;;("e" )
-     ("f" "file")
-     ("g" "git"     "Version Control")
-     ("h" "help"    "Help")
-     ("p" "project")
-     ("t" "toggle")
-     ("v" "view")
-     ("w" "window")
-     ("x" "text"    "Text")
-     ;; uppercase
-     ("F" "frame")
-     ("P" "package")
-     ("Z" "quit"    "Quit")))
-  :config
-  (leader-key-menu-initialize))
-
-
-;;; Which-key
+;;;; Which-key
 
 (use-builtin which-key
   :custom
@@ -349,23 +309,37 @@
   :config
   (which-key-posframe-mode -1))
 
+;;;; Leader-Menu system
 
+(use-builtin config-keybindings
+  :custom
+  (config:emacs-leader-key-menu-list
+   '(;; symbols
+     (">" "shell")
+     ("!" "error")
+     ("/" "search"  "Search")
+     ;; lowercase
+     ("a" "app"     "Applications")
+     ("b" "buffer")
+     ("c" "compile" "Compilation")
+     ;;("d" )
+     ;;("e" )
+     ("f" "file")
+     ("g" "git"     "Version Control")
+     ("h" "help"    "Help")
+     ("p" "project")
+     ("t" "toggle")
+     ("v" "view")
+     ("w" "window")
+     ("x" "text"    "Text")
+     ;; uppercase
+     ("F" "frame")
+     ("P" "package")
+     ("Z" "quit"    "Quit")))
+  :config
+  (leader-key-menu-initialize))
 
 ;;; Disaster Recovery
-
-(use-feature ; auto-save
-  :defer nil
-  :custom
-  (auto-save-interval 150)       ; characters typed
-  (auto-save-timeout 20)         ; seconds of idle time
-  (auto-save-visited-interval 5) ; seconds of idle if auto-save-visited-mode
-  (auto-save-default t)          ; auto-save by default
-  (auto-save-no-message t)       ; auto-save quietly
-  (auto-save-file-name-transforms
-   '(("\\`/[^/]*:\\([^/]*/\\)*\\([^/]*\\)\\'"
-      (file-name-concat config:emacs-auto-save-dir "\\2") t)))
-  (auto-save-list-file-prefix
-   (file-name-concat config:emacs-auto-save-dir "sessions" ".saves-")))
 
 ;;;; History
 
@@ -379,6 +353,7 @@
   :config
   (savehist-mode 1))
 
+;;;; Recent files list
 
 (use-builtin recentf
   :defer 0.1
@@ -387,9 +362,21 @@
   :config
   (recentf-mode))
 
+;;;; Auto save and backups
+
 (use-builtin files
   :demand t
   :custom
+  (auto-save-interval 150)       ; characters typed
+  (auto-save-timeout 20)         ; seconds of idle time
+  (auto-save-visited-interval 5) ; seconds of idle if auto-save-visited-mode
+  (auto-save-default t)          ; auto-save by default
+  (auto-save-no-message t)       ; auto-save quietly
+  (auto-save-file-name-transforms
+   '(("\\`/[^/]*:\\([^/]*/\\)*\\([^/]*\\)\\'"
+      (file-name-concat config:emacs-auto-save-dir "\\2") t)))
+  (auto-save-list-file-prefix
+   (file-name-concat config:emacs-auto-save-dir "sessions" ".saves-"))
   (make-backup-files t)
   ;; only make backups if no version control
   (vc-make-backup-files nil)
@@ -435,6 +422,14 @@
     "s" '("scratch buffer"    . scratch-buffer)))
 
 ;;; Package management
+
+(use-package mason
+  :custom
+  ;; Centralize neovim & emacs mason packages
+  (mason-dir (expand-file-name "~/.local/share/mason"))
+  :config
+  (mason-setup))
+
 
 ;;;; Projects
 
@@ -641,7 +636,6 @@
     "t" '("Restart with timer" . restart-emacs-timed-requires)
     "T" '("Restart with adv. timer" . restart-emacs-adv-timers)))
 
-
 ;;; UI Elements
 
 (use-feature ; toggles
@@ -656,8 +650,7 @@
     "r" '("relative" . menu-bar--display-line-numbers-mode-relative)
     "a" '("absolute" . menu-bar--display-line-numbers-mode-absolute)
     "v" '("visual"   . menu-bar--display-line-numbers-mode-visual)
-    "q" '("off"      . menu-bar--display-line-numbers-mode-none))
-  )
+    "q" '("off"      . menu-bar--display-line-numbers-mode-none)))
 
 ;;;; Mouse & cursors
 
@@ -1329,20 +1322,49 @@ asterix (lists) intact from BEGIN to END."
 
 ;;;; Hooks
 
-(use-builtin config-hook-functions
-  :demand t
+(use-builtin simple
   :defer nil
-  :requires (ws-butler))
-
-
-(use-builtin simple ;; fundemental-mode
-  :hook (before-save .  before-save-setup))
+  :requires (ws-butler)
+  :preface
+  (defun fundamental-mode-setup ()
+    "Define things that should be set in all modes."
+    (setq-default tab-width 2
+                  fill-column 80
+                  tab-always-indent 'complete)
+    (ws-butler-mode)
+    (display-line-numbers-mode 1)
+    (display-fill-column-indicator-mode 1)
+    (auto-insert-mode 1)
+    (auto-fill-mode 1)))
 
 (use-builtin text-mode
+  :defer nil
+  :preface
+  (defun text-mode-setup ()
+    "Function to add commands to `text-mode-hook'."
+    (fundamental-mode-setup))
   :hook (text-mode . text-mode-setup))
 
 (use-builtin prog-mode
-  :hook (prog-mode . prog-mode-setup))
+  :defer nil
+  :preface
+  (defun prog-mode-setup ()
+    "Function to add commands to `prog-mode-hook'."
+    (fundamental-mode-setup))
+  :hook (prog-mode-prog-mode-setup))
+
+
+(defun package-list-mode-setup()
+  "Setup the package list buffer."
+  (hl-line-mode 1))
+
+;;;###autoload
+(defun json-mode-setup ()
+  "Setup the json mode.")
+
+(provide 'config-hook-functions)
+
+;;; config-hook-functions.el ends here
 
 
 ;;; Terminals & Shells
@@ -1464,13 +1486,17 @@ asterix (lists) intact from BEGIN to END."
 (use-package ripgrep
   :ensure-system-package rg)
 
+
 (use-package parinfer-rust-mode
   :requires (flycheck)
+  :preface
+  (defun parinfer-rust-mode-setup ()
+    "Setup the parinfer-rust-mode.")
   :functions (flycheck-running-p flycheck-add-next-checker)
-  :hook (emacs-lisp-mode)
+  :hook ((emacs-lisp-mode clojure-mode) . parinfer-rust-mode)
   :custom
-  (parinfer-rust-library-directory
-   (file-name-concat (getenv "HOME") ".cargo" "bin" "lib"))
+  (parinfer-rust-library-directory "~/.cargo/bin/")
+  (parinfer-rust-library "~/.cargo/bin/parinfer-rust-windows.dll")
   (parinfer-rust-disable-troublesome-modes t)
   :config
   (when (flycheck-running-p)
@@ -1504,6 +1530,16 @@ asterix (lists) intact from BEGIN to END."
 
 (use-package info-colors
   :hook (Info-selection-hook . info-colors-fontify-node))
+
+
+;;;; Transient menu system
+
+(use-package transient)
+
+;; An opinionated menu system built on top of `transient'
+(use-package casual)
+
+
 
 ;;; Search
 
@@ -1819,30 +1855,8 @@ insert the given functions after it. Otherwise, insert them at the top."
 
 ;;;; Templates
 
-(use-builtin autoinsert
-  :demand t
-  :defer nil
-  :requires yasnippet
-  :preface
-  (defun insert/expand-snippet ()
-    "Expand the snippets in the current buffer.
-This function is used by `auto-insert-mode' to expand snippets in the
-template file."
-    (let ((current (buffer-name (current-buffer))))
-      (unless (string-match "^CAPTURE" current)
-        (yas-expand-snippet (nth 1 (yas--parse-template)) (point-min) (point-max)))))
-
-  :custom
-  (auto-insert 'other)
-  (auto-insert-query nil)
-  (auto-insert-directory config:emacs-templates-dir)
-  (auto-insert-alist
-   '((("\\.el\\'" . "Emacs Lisp") . ["template.el" insert/expand-snippet])
-     (("\\.org\\'" . "org-mode") . ["template.org" insert/expand-snippet])))
-  :config
-  (auto-insert-mode 1))
-
 (use-package yasnippet
+  :demand t
   :functions (yas-expand-snippet yas--parse-template)
   :defines (config:emacs-snippets-dir)
   :init
@@ -1852,6 +1866,28 @@ template file."
   :general
   (global-menu
     "M-/" '("Select snippet" . consult-yasnippet)))
+
+(use-builtin autoinsert
+  :demand t
+  :requires (yasnippet)
+  :preface
+  (defun insert/expand-snippet ()
+    "Expand the snippets in the current buffer.
+This function is used by `auto-insert-mode' to expand snippets in the
+template file."
+    (let ((current (buffer-name (current-buffer))))
+      ;; Don't bump heads with capture templates
+      (unless (string-match "^CAPTURE" current)
+        (yas-expand-snippet (nth 1 (yas--parse-template)) (point-min) (point-max)))))
+  :custom
+  (auto-insert 'other)
+  (auto-insert-query nil)
+  (auto-insert-directory config:emacs-templates-dir)
+  (auto-insert-alist
+   '((("\\.el\\'" . "Emacs Lisp") . ["template.el" insert/expand-snippet])
+     (("\\.org\\'" . "org-mode") . ["template.org" insert/expand-snippet])))
+  :config
+  (auto-insert-mode 1))
 
 ;;;; Text Correction
 
@@ -1990,6 +2026,7 @@ template file."
     ;; we can easily distinguish the vars from the functions
     ;; see: https://github.com/jwiegley/use-package/issues/1077
     ;; WARNING: Affects all emacs-lisp completions
+    (outline-minor-mode 1)
     (setq-local completion-at-point-functions
                 (list (cape-capf-inside-code #'cape-elisp-symbol)))
     )
@@ -2076,7 +2113,6 @@ template file."
   (powershell-continuation-indent 1))
 
 (use-package powershell-ts-mode
-  :disabled t
   :vc
   (:url "https://github.com/dmille56/powershell-ts-mode.git"
         :branch main)
@@ -2217,6 +2253,10 @@ template file."
     (outline-minor-faces-mode -1)
     (electric-pair-local-mode 1)
     (outline-minor-mode -1)
+    (setq-local fill-column 110
+                tab-always-indent 'complete)
+    (auto-fill-mode 1)
+    (display-fill-column-indicator-mode 1)
     ;; dont add pair for `less-than_symbol' in `org-mode'.  It messes up org-tempo
     (add-function :before-until electric-pair-inhibit-predicate
                   (lambda (c) (eq c ?<))))
@@ -2248,7 +2288,8 @@ template file."
                     (insert (format "[[%s][%s]]" url text)))))))))))
 
   (defun org-syntax-convert-keyword-case (&optional upper)
-    "Convert the case of all keywords to lowercase by default unless UPPER is non-nil."
+    "Convert the case of all keywords in current file.
+Defaults to lowercase, unless UPPER is non-nil."
     (interactive)
     (save-excursion
       (goto-char (point-min))
@@ -2340,6 +2381,7 @@ template file."
      (:endgrouptag)))
 
 ;;;; Format
+
   (org-hide-emphasis-markers t)
   (org-pretty-entities t)
   (org-pretty-entities-include-sub-superscripts nil)
@@ -2347,6 +2389,7 @@ template file."
   (org-startup-indented t)
   (org-adapt-indentation t)
   (org-hide-leading-stars t)
+
 ;;;; clocking tasks
   (org-clock-into-drawer t)
   (org-clock-persist 'history)
@@ -2354,6 +2397,7 @@ template file."
   (org-clock-mode-line-total 'today)
 
 ;;;; keybindings
+
   :general
   ;; TODO: I don't think that o is the right top level menu, is it?
   (make-leader-menu "Org-mode" "o"
@@ -3007,54 +3051,6 @@ With prefix ARG prompt with `completing-read` to choose a node."
   (deft-ignore-file-regexp
    (concat "\\(?:" "^\\..*" "\\)"))
   ;; Deft buffer display
-  (deft-strip-title-regexp
-   (concat "\\(?:"
-           "^%+"
-           "\\|^#\\+title:[\t ]*"
-           "\\|^[#* ]+"
-           "\\|-\\*-[[:alpha:]]+-\\*-"
-           "\\|^Title:[\t  ]*"
-           "\\|#+$"
-           "\\)"))
-  ;; I don't want to exclude all keywords
-  ;; "\\|^#\\+[[:upper:]_]+:.*$"
-  (deft-strip-summary-regexp
-   (concat "\\("
-           "[\n\t]" ; blank lines
-           ;; Strip the whole line of these
-           "\\|^#\\+" ; start of property line
-           "\\(?:"
-           "setupfile"
-           ;;          "\\|startup"
-           ;;          "\\|title"
-           ;;          "\\|property"
-           ;;          "\\|index"
-           ;;          "\\|link"
-           "\\|category"
-           ;;          "\\|filetags"
-           ;;          "\\|id"
-           ;;          "\\|updated"
-           ;;          "\\|created"
-           "\\)"
-           ":.*$" ; end of property line
-
-           ;; Properties block
-           "\\|^:PROPERTIES:\\(.\\|\r?\n\\)+:END:.*$"
-
-           ;;          ;; strip the keyword but not the
-           ;;          ;; content
-           "\\|^#\\+desc: "
-           "\\|^#\\+description: "
-           "\\|^#\\+subtitle: "
-           ;;          "\\|^#\\+summary: "
-           ;;          ;; blocks
-           ;;          "\\|^[\t ]*#\\+\\(?:" ; start of property line
-           ;;          "\\|begin_"
-           ;;          "\\|end_"
-           ;; "\\).*$"
-           ;;          ;; any line starting with something other than #
-           ;;          "\\|^[^#].*$"
-           "\\)"))
   ;; Creating new files
   (deft-file-naming-rules '((noslash . ".")
                             (nospace . ".")
@@ -3069,28 +3065,26 @@ With prefix ARG prompt with `completing-read` to choose a node."
   (leader-app-menu "d" '("Deft" . deft))
   (major-mode-menu 'deft-mode-map
     ;; Filtering
-    "C-l" 'deft-filter
-    "C-c" 'deft-filter-clear
-    "C-y" 'deft-filter-yank
+    "C-l" '("filter"       . deft-filter)
+    "C-c" '("clear filter" . deft-filter-clear)
+    "C-y" '("Copy filter"  . deft-filter-yank)
     ;; File creation
-    "n" 'deft-new-file
-    "N" 'deft-new-file-named
-    "<C-return>" 'deft-new-file-named
+    "n"   '("New file"       . deft-new-file)
+    "N"   '("New file..."    . deft-new-file-named)
     ;; File management
-    "D" 'deft-delete-file
-    "R" 'deft-rename-file
-    "f" 'deft-find-file
-    "C-a" 'deft-archive-file
+    "D"   '("Delete"         . deft-delete-file)
+    "R"   '("Rename"         . deft-rename-file)
+    "f"   '("Open"           . deft-find-file)
+    "C-a" '("Archive"        . deft-archive-file)
     ;; Settings
-    "C-t" 'deft-toggle-incremental-search
-    "s" 'deft-toggle-sort-method
+    "C-t" '("Toggle inc search" . deft-toggle-incremental-search)
+    "s"   '("Toggle sort"         . deft-toggle-sort-method)
     ;; Miscellaneous
-    "g" 'deft-refresh
-    "q" 'quit-window
-    "<tab>" 'forward-button
-    "<backtab>" 'backward-button
-    "<S-tab>" 'backward-button
-    "C-o" 'deft-open-file-other-window))
+    "g" '("Refresh"             . deft-refresh)
+    "q" '("Quit"                . quit-window)
+    "<tab>" '("Forward"         . forward-button)
+    "<backtab>" '("Back"        . backward-button)
+    "C-o" '("Open other win"    . deft-open-file-other-window)))
 
 
 ;;; Finalize

@@ -21,9 +21,7 @@
 (require 'plist-x) ; Provides `plist-remove'
 (require 'config-options)
 
-;; Create the `global-def' to add global keys; keys available in every mode.
-
-;; TODO: maybe this should be `global-menu'?
+;; Create the `global-menu' to add global keys; keys available in every mode.
 (general-create-definer global-menu
   :keymap 'global-map
   :states
@@ -48,6 +46,7 @@
 
 
 ;;; Leader menu system
+;;
 
 (defvar leader-menu-prefix-alist
   `(("leader-menu" . ,config:emacs-leader-key)))
@@ -146,7 +145,7 @@ body.
 - `:PARENT' The definer that we want to wrap
 - `:DISPLAY-NAME' The name displayed in which-key menus if not NAME."
   (declare (indent defun))
-  (let* ((display-name  (or (plist-get body :display-name) (concat (capitalize name) "s")))
+  (let* ((display-name  (or (plist-get body :display-name) (capitalize name)))
          (parent        (or (plist-get body :parent) 'leader-menu))
          (parent-prefix (or (get-leader-menu-prefix (symbol-name parent)) ""))
          ;; remove keys that do not belong to the `general-create-definer' macro

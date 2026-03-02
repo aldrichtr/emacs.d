@@ -7,6 +7,21 @@
 
 
 
+;;; Generated autoloads from config-hook-functions.el
+
+(autoload 'fundamental-mode-setup "config-hook-functions" "\
+Define things that should be set in all modes.")
+(autoload 'text-mode-setup "config-hook-functions" "\
+Function to add commands to `text-mode-hook'.")
+(autoload 'prog-mode-setup "config-hook-functions" "\
+Function to add commands to `prog-mode-hook'.")
+(autoload 'package-list-mode-setup "config-hook-functions" "\
+Setup the package list buffer.")
+(autoload 'json-mode-setup "config-hook-functions" "\
+Setup the json mode.")
+(register-definition-prefixes "config-hook-functions" '("before-save-setup"))
+
+
 ;;; Generated autoloads from config-options.el
 
 (register-definition-prefixes "config-options" '("config"))
@@ -57,7 +72,21 @@ body.
 
 ;;; Generated autoloads from package-macros.el
 
-(register-definition-prefixes "package-macros" '("use-"))
+(autoload 'use-feature "package-macros" "\
+A `use-package' definition that represents a core Emacs feature.
+This is the same as calling `use-package Emacs ARGS' with ensure nil,
+defer nil.
+
+(fn &rest ARGS)" nil t)
+(autoload 'use-builtin "package-macros" "\
+Like `use-package' but for builtin packages.
+NAME and ARGS are the same as in `use-package'.
+
+(fn NAME &rest ARGS)" nil t)
+(autoload 'use-config "package-macros" "\
+Load the config file NAME optionally passings ARGS
+
+(fn NAME &rest ARGS)" nil t)
 
 
 ;;; Generated autoloads from package-metadata.el
@@ -75,31 +104,16 @@ body.
 (register-definition-prefixes "projectile-refactor" '("projectile-"))
 
 
+;;; Generated autoloads from use-config.el
+
+(register-definition-prefixes "use-config" '("config:user-config-dir" "create-" "use-config"))
+
+
 ;;; Generated autoloads from config-keybindings.el
 
 (autoload 'leader-key-menu-initialize "config-keybindings" "\
 Create the top-level leader-key menu.")
 (register-definition-prefixes "config-keybindings" '("config:emacs-leader-key-menu-list"))
-
-
-;;; Generated autoloads from config-hook-functions.el
-
-(autoload 'fundamental-mode-setup "config-hook-functions" "\
-Define things that should be set in all modes.")
-(autoload 'text-mode-setup "config-hook-functions" "\
-Function to add commands to `text-mode-hook'.")
-(autoload 'prog-mode-setup "config-hook-functions" "\
-Function to add commands to `prog-mode-hook'.")
-(autoload 'package-list-mode-setup "config-hook-functions" "\
-Setup the package list buffer.")
-(autoload 'json-mode-setup "config-hook-functions" "\
-Setup the json mode.")
-(register-definition-prefixes "config-hook-functions" '("before-save-setup"))
-
-
-;;; Generated autoloads from use-config.el
-
-(register-definition-prefixes "use-config" '("config:user-config-dir" "create-" "use-config"))
 
 ;;; End of scraped data
 
