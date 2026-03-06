@@ -22,8 +22,12 @@
       (setenv "PATH" (concat (getenv "PATH") ":" termux-bin))
       (setq exec-path (append exec-path (list termux-bin))))))
 
-;; LSP Optimization
-(setenv "LSP_USE_PLISTS" "true")
+;;; Performance
+
+(setopt inhibit-startup-screen t
+        inhibit-startup-message t
+        inhibit-startup-echo-area-message "Timothy R. Aldrich"
+        frame-inhibit-implied-resize t)
 
 ;;; Garbage Collection
 
@@ -134,10 +138,13 @@
     (require 'use-package-ensure-system-package)
 
     ;; Show `use-package' progress when `--debug-init' is specified
-    (when init-file-debug
-      (setopt use-package-verbose t
-              use-package-expand-minimally nil
-              debug-on-error t))
+    (let ((verbose (or nil init-file-debug)))
+      (setq use-package-verbose verbose
+            use-package-expand-minimally (not verbose)
+            use-package-compute-statistics verbose
+            debug-on-error verbose
+            debug-on-message "buffer-local while locally let-bound"
+            debug-on-quit verbose))
 
     (setopt use-package-compute-statistics t)
     ;; we almost always want to install the package if it is missing

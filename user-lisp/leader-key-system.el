@@ -22,6 +22,8 @@
 (require 'config-options)
 
 ;; Create the `global-menu' to add global keys; keys available in every mode.
+
+;;; Top-level definers
 (general-create-definer global-menu
   :keymap 'global-map
   :states
@@ -43,7 +45,6 @@
 (general-create-definer major-mode-menu
   :states '(normal)
   :prefix config:emacs-local-leader-key)
-
 
 ;;; Leader menu system
 ;;

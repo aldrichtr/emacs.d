@@ -7,19 +7,23 @@
 
 ;;; Preliminaries
 
+;;;; User Information
+
 (setopt
  user-full-name "Timothy R. Aldrich"
  user-mail-address "timothy.r.aldrich@gmail.com")
 
-;; Defines convenience `use-package' macros
+;;;; Package system
+
 (require 'package-macros)
 
 (require 'package-metadata)
 
+;;;; Keybinding system
+
 (require 'leader-key-system)
 
 ;;;; Config options
-
 
 (use-builtin config-options
   :custom
@@ -240,7 +244,7 @@
     'global
     "M-d"  '("Match next" . evil-multiedit-match-and-next)
     "M-S-d" 'evil-multiedit-match-and-prev
-    "RET"   'evil-multiedit-toggle-or-restrict-region)
+    "<enter>"   'evil-multiedit-toggle-or-restrict-region)
   (general-def '(multiedit multiedit-insert)
     "C-n" 'evil-multiedit-next
     "C-p" 'evil-multiedit-prev)
@@ -325,16 +329,17 @@
      ;;("d" )
      ;;("e" )
      ("f" "file")
-     ("g" "git"     "Version Control")
+     ;;("g")
      ("h" "help"    "Help")
      ("p" "project")
      ("t" "toggle")
-     ("v" "view")
+     ("v" "git" "Version Control")
      ("w" "window")
      ("x" "text"    "Text")
      ;; uppercase
      ("F" "frame")
      ("P" "package")
+     ("V" "view")
      ("Z" "quit"    "Quit")))
   :config
   (leader-key-menu-initialize))
@@ -423,46 +428,74 @@
 
 ;;; Package management
 
-(use-package mason
-  :custom
-  ;; Centralize neovim & emacs mason packages
-  (mason-dir (expand-file-name "~/.local/share/mason"))
-  :config
-  (mason-setup))
-
+(use-builtin package
+  :preface
+  (defun package-list-mode-setup()
+    "Setup the package list buffer."
+    (hl-line-mode 1))
+  :hook (package-list-mode . package-list-mode-setup)
+  :general
+  (leader-package-menu
+    "l" '("List packages" . package-list-packages)
+    "L" '("List packages(no fetch)" . package-list-packages-no-fetch)
+    "R" '("Report" . use-package-report)))
 
 ;;;; Projects
+
+
+(use-builtin files
+  :defer nil
+  :preface
+  (add-to-list 'safe-local-variable-values
+               '(compilation-read-command . nil)))
+
+(use-package fancy-compilation
+  :preface
+  (defun compilation-mode-setup ()
+    "Setup compilation mode.  Add the ability to render ascii color"
+    (fancy-compilation-mode))
+  :hook (compilation-mode . compilation-mode-setup))
+
 
 (use-package projectile
   :custom
   (projectile-dirconfig-file ".projectile")
+  (projectile-known-projects-file (config/emacs-local-dir "projectile-bookmarks.eld"))
   (projectile-dirconfig-comment-prefix ";")
+  (projectile-completion-system 'default)
+  (projectile-per-project-compilation-buffer t)
   (projectile-project-search-path
    '( "~/projects"
       "~/repos"
       "~/.dotfiles/packages"))
+  :config
+  ;; this ensures projectile and project play well together
+  (add-hook 'project-find-functions #'project-projectile)
+  (projectile-mode 1)
+
   :general
   (leader-project-menu
-    "/" '("ripgrep"   . projectile-ripgrep)
-    "%" '("replace"   . projectile-replace)
-    ">" '("terminal"  . projectile-run-term)
-    "b" '("buffers"   . consult-projectile-switch-to-buffer)
+    "/" '("ripgrep"     . projectile-ripgrep)
+    "%" '("replace"     . projectile-replace)
+    ">" '("terminal"    . projectile-run-term)
+    "b" '("buffers"     . consult-projectile-switch-to-buffer)
     "E" '("Edit config" . projectile-edit-dir-locals)
-    "f" '("find file" . projectile-find-file)
-    "o" '("occur"     . projectile-multi-occur)
-    "p" '("commander" . projectile-commander)
-    "s" '("toggle"    . projectile-toggle-between-implementation-and-test)
-    )
+    "f" '("find file"   . projectile-find-file)
+    "o" '("occur"       . projectile-multi-occur)
+    "p" '("commander"   . projectile-commander)
+    "s" '("toggle"      . projectile-toggle-between-implementation-and-test)
+    "q" '("Quit"        . projectile-kill-buffers))
+
   (add-leader-keys "Run" "r"
     :parent leader-project-menu
     "c" '("Compile" . projectile-compile-project)
     "t" '("Test"    . projectile-test-project)
     "r" '("Run"     . projectile-run-project)
-    "i" '("Install" . projectile-install-project)
+    "i" '("Install" . projectile-install-project))
 
-    )
   (add-leader-keys "Project list" "L"
     :parent leader-project-menu
+    "s" '("Switch"  . projectile-switch-project)
     "c" '("Cleanup" . projectile-cleanup-known-projects)))
 
 ;;;; Repository
@@ -473,40 +506,107 @@
   ((magit-format-file-function #'magit-format-file-nerd-icons))
   :custom-face
   (diff-added   ((t (:background "brown"))))
-  (diff-removed ((t (:background "DarkOliveGreen")))))
+  (diff-removed ((t (:background "DarkOliveGreen"))))
+  :general
+  (leader-git-menu
+    "s" '("Status" . magit-status)))
 
-(use-package magit-todos)
+;; This shows TODO comments in the magit status buffer
+(use-package magit-todos
+  :after magit
+  :config
+  (magit-todos-mode 1))
 
-(use-package magit-org-todos)
+;; If there is a `todo.org' file in the root, this will show todos in the magit status buffer
+
+(use-package magit-org-todos
+  :after magit
+  :config
+  (config-org-todos-autoinsert))
 
 (use-package forge
-  :defer t
-  :init
-  (setq forge-add-default-bindings nil))
-
-(use-package consult-gh
-  :after (consult)
+  :after magit
   :custom
-  (consult-gh-default-clone-directory
-   (file-name-concat (getenv "HOME") "projects"))
-  (consult-gh-show-preview                 t)
-  (consult-gh-preview-buffer-mode          'org-mode)
-  (consult-gh-preview-key                  "C-o")
-  (consult-gh-repo-action                  #'consult-gh--repo-browse-files-action)
-  (consult-gh-issue-action                 #'consult-gh--issue-view-action)
-  (consult-gh-pr-action                    #'consult-gh--pr-view-action)
-  (consult-gh-code-action                  #'consult-gh--code-view-action)
-  (consult-gh-file-action                  #'consult-gh--files-view-action)
-  (consult-gh-notifications-action         #'consult-gh--notifications-action)
-  (consult-gh-dashboard-action             #'consult-gh--dashboard-action)
-  (consult-gh-large-file-warning-threshold 2500000)
-  (consult-gh-prioritize-local-folder      'suggest)
-  :config
-  ;; Remember visited orgs and repos across sessions
-  (add-to-list 'savehist-additional-variables 'consult-gh--known-orgs-list)
-  (add-to-list 'savehist-additional-variables 'consult-gh--known-repos-list)
-  ;; Enable default keybindings (e.g. for commenting on issues, prs, ...)
-  (consult-gh-enable-default-keybindings))
+  (auth-sources (file-truename "~/.secrets/authinfo.gpg"))
+
+  (use-package consult-gh
+    :after (consult)
+    :custom
+    (consult-gh-default-clone-directory
+     (file-name-concat (getenv "HOME") "projects"))
+    (consult-gh-show-preview                 t)
+    (consult-gh-preview-buffer-mode          'org-mode)
+    (consult-gh-preview-key                  "C-o")
+    (consult-gh-repo-action                  #'consult-gh--repo-browse-files-action)
+    (consult-gh-issue-action                 #'consult-gh--issue-view-action)
+    (consult-gh-pr-action                    #'consult-gh--pr-view-action)
+    (consult-gh-code-action                  #'consult-gh--code-view-action)
+    (consult-gh-file-action                  #'consult-gh--files-view-action)
+    (consult-gh-notifications-action         #'consult-gh--notifications-action)
+    (consult-gh-dashboard-action             #'consult-gh--dashboard-action)
+    (consult-gh-large-file-warning-threshold 2500000)
+    (consult-gh-prioritize-local-folder      'suggest)
+    (consult-gh-notifications-show-unread-only t)
+    :config
+    ;; Remember visited orgs and repos across sessions
+    (add-to-list 'savehist-additional-variables 'consult-gh--known-orgs-list)
+    (add-to-list 'savehist-additional-variables 'consult-gh--known-repos-list)
+    :general
+    (add-leader-keys "h" "Github"
+      :parent leader-git-menu
+      "L"  '("Login" . consult-gh-auth-switch)
+      "d"  '("Dashboard" . consult-gh-dashboard)
+      "n"  '("Notifications" . consult-gh-notifications)
+      ;;--------------------------------------
+      "w"  '(:ignore t :which-key "Workflows")
+      "wl" '("List"    . consult-gh-workflow-list)
+      "wc" '("Create"    . consult-gh-workflow-create)
+      "we" '("Edit"    . consult-gh-workflow-edit)
+      ;;--------------------------------------
+      "wr" '(:ignore t :which-key "Run")
+      "wra" '("Run Action"    . consult-gh-workflow-run)
+      "wrl" '("List"   . consult-gh-run-list)
+      "wrv" '("View"   . consult-gh-run-view)
+      "wrR" '("ReRun"   . consult-gh-run-rerun)
+      ;;--------------------------------------
+      "i"  '(:ignore t :which-key "Issues")
+      "i/" '("Search"  . consult-gh-search-issues)
+      "il" '("List"    . consult-gh-issue-list)
+      "ic" '("Create"  . consult-gh-issue-create)
+      "iC" '("Close"   . consult-gh-issue-close)
+      "ie" '("Edit"    . consult-gh-issue-edit)
+      "iL" '("Lock"    . consult-gh-issue-lock)
+      ;;--------------------------------------
+      "p"  '(:ignore t :which-key "PRs")
+      "p/" '("Search"  . consult-gh-search-prs)
+      "pl" '("List"    . consult-gh-pr-list)
+      "pc" '("Create"  . consult-gh-pr-create)
+      "pC" '("Close"   . consult-gh-pr-close)
+      "pe" '("Edit"    . consult-gh-pr-edit)
+      ;;--------------------------------------
+      "r"  '(:ignore t :which-key "Repos")
+      "r/" '("Search" . consult-gh-search-repos)
+      "rl" '("List"   . consult-gh-repo-list)
+      "rc" '("Clone"  . consult-gh-repo-clone)
+      "rf" '("Fork"   . consult-gh-repo-fork)
+      "rn" '("New"    . consult-gh-repo-create)
+      "rm" '("Mine"   . consult-gh-user-repos)
+      ;;--------------------------------------
+      "f"  '(:ignore t :which-key "Files")
+      "fc" '("Create" . consult-gh-create-file)
+      "fe" '("Edit"   . consult-gh-edit-file)
+      "fr" '("Rename" . consult-gh-rename-file)
+      "fd" '("Dired"  . consult-gh-dired)
+      "fD" '("Delete" . consult-gh-delete-file)
+      "fu" '("Upload" . consult-gh-upload-files)
+      ;;--------------------------------------
+      "/"  '(:ignore t :which-key "Search")
+      "/r" '("Repos" . consult-gh-search-repos)
+      "/i" '("Issues"   . consult-gh-search-issues)
+      "/p" '("PRs"   . consult-gh-search-prs)
+      "/f" '("Files" . consult-gh-find-file)
+      "/c" '("Code"   . consult-gh-search-code)
+      "/m" '("Commits"   . consult-gh-search-commits))))
 
 (use-package consult-gh-embark
   :after (consult-gh)
@@ -526,11 +626,13 @@
 (use-builtin dired
   :custom
   (dired-auto-revert t)
-  (dired-kill-when-opening-new-dired-buffer t)
+  (dired-kill-when-opening-new-dired-buffer t "Dont create buffers for each directory")
   (dired-recursive-copies 'always)
   (dired-recursive-deletes 'top)
   (dired-dwim-target t)
+  ;; Use the mouse with dired
   (dired-mouse-drag-files t)
+  (mouse-drag-and-drop-region-cross-program)
   (dired-hide-details-mode t)
   (dired-listing-switches "-alh")
   :general
@@ -539,16 +641,6 @@
 (use-builtin dired-x
   :after dired)
 
-(use-package dired-posframe
-  ;; This package is not very good.  Syntax highlighting doesnt work
-  ;; and it pops open like a million posframes
-  :disabled t
-  :hook (dired-mode)
-  :config
-  (add-to-list 'dired-posframe-enable-modes))
-
-;; dirvish has these already, so if you enable it, you'll end up with double icons for all the files
-(use-package nerd-icons-dired)
 
 (use-package dired-auto-readme
   :defines (dired-auto-readme-file)
@@ -564,7 +656,9 @@
     "h" 'dired-gitignore-global-mode))
 
 (use-package dirvish
+  :init (dirvish-override-dired-mode)
   :custom
+  ;; dirvish main window
   (dirvish-attributes
    '(vc-state file-size git-msg subtree-state nerd-icons collapse file-time))
   (dirvish-mode-line-format
@@ -572,10 +666,12 @@
   (dirvish-header-line-format
    '(:left (path) :right (free-space)))
   (dirvish-header-line-height '(25 . 35))
-  (dirvish-reuse-session nil)
-  (dirvish-side-width 38)
+  (dirvish-reuse-session nil "Kill all dired buffers when quitting")
   (dired-listing-switches
    "-l --almost-all --human-readable --group-directories-first --no-group")
+  ;; dirvish side window
+  (dirvish-side-attributes '(nerd-icons collapse subtree-state))
+  (dirvish-side-width 38)
   (dirvish-side-display-alist
    '((side . right) (slot . -1)))
   :general
@@ -587,6 +683,11 @@
   (dirvish-side-follow-mode t))
 
 ;;; Emacs Application
+
+(use-feature ; emacs
+  :custom
+  (yes-or-no-prompt "(y)es or n(o) ")
+  (use-short-answers t))
 
 (use-builtin server
   :functions (server-running-p)
@@ -677,25 +778,28 @@
 ;;;; Frame
 
 (use-feature ; Frame properties - Common
-  :defines (config:emacs-default-font)
   :custom
   ;; We want the window manager to control the window (frame) size
   (frame-inhibit-implied-resize t)
   :config
-  (setq frame-title-format
-        '(""
-          invocation-name
-          " " emacs-version
-          " - "
-          user-login-name " - "
-          (:eval (if (buffer-file-name)
-                     (abbreviate-file-name (buffer-file-name))))))
+  (setopt frame-title-format
+          '(""
+            invocation-name
+            " " emacs-version
+            " - "
+            user-login-name " - "
+            (:eval (if (buffer-file-name)
+                       (abbreviate-file-name (buffer-file-name))))))
   (set-frame-font config:emacs-default-font nil t)
+  (add-to-list 'initial-frame-alist
+               `(font . ,config:emacs-default-font))
   (add-to-list 'default-frame-alist
                `(font . ,config:emacs-default-font))
   :general
   (leader-frame-menu
-    "f" '("New" . make-frame-command)))
+    "f" '("New" . make-frame-command)
+    "c" '("Clone" . clone-frame)
+    "q" '("Quit" . delete-frame)))
 
 (use-feature ; Android
   :functions (os-android-p)
@@ -979,7 +1083,7 @@
   :general
   ;; ace-window has its own keymap that is built from aw-dispatch-alist
   (leader-window-menu
-    "RET" '("Jump to"     . ace-window)
+    "<enter>" '("Jump to"     . ace-window)
     ;; window size
     "s"  '("menu"       . win-size-hydra/body)
     "+"  '("+ height"   . evil-window-increase-height)
@@ -1351,20 +1455,15 @@ asterix (lists) intact from BEGIN to END."
   (defun prog-mode-setup ()
     "Function to add commands to `prog-mode-hook'."
     (fundamental-mode-setup))
-  :hook (prog-mode-prog-mode-setup))
+  :hook (prog-mode . prog-mode-setup))
 
 
-(defun package-list-mode-setup()
-  "Setup the package list buffer."
-  (hl-line-mode 1))
 
-;;;###autoload
-(defun json-mode-setup ()
-  "Setup the json mode.")
-
-(provide 'config-hook-functions)
-
-;;; config-hook-functions.el ends here
+(use-builtin json-mode
+  :preface
+  (defun json-mode-setup ()
+    "Setup the json mode.")
+  :hook (json-mode . json-mode-setup))
 
 
 ;;; Terminals & Shells
@@ -1384,19 +1483,19 @@ asterix (lists) intact from BEGIN to END."
 
 (use-package term-projectile)
 
-(use-builtin shell
-  :defines (explicit-pwsh.exe-args)
-  :defer t
-  :config
-  (when (os-windows-p)
-    (setq explicit-shell-file-name (executable-find "pwsh")
-          ;;shell-file-name "pwsh.exe"
-          explicit-pwsh.exe-args '("-NoLogo" "-NoProfile" "-Interactive")
-          shell-prompt-pattern "PS .*>$"))
-  :general-config
-  (leader-shell-menu
-    "p" '("Powershell" . shell)
-    "e" '("Emacs shell" . eshell)))
+;; (use-builtin shell
+;;   :defines (explicit-pwsh.exe-args)
+;;   :defer t
+;;   :config
+;;   (when (os-windows-p)
+;;     (setq explicit-shell-file-name (executable-find "pwsh")
+;;           ;;shell-file-name "pwsh.exe"
+;;           explicit-pwsh.exe-args '("-NoLogo" "-NoProfile" "-Interactive")
+;;           shell-prompt-pattern "PS .*>$"))
+;;   :general-config
+;;   (leader-shell-menu
+;;     "p" '("Powershell" . shell)
+;;     "e" '("Emacs shell" . eshell)))
 
 (use-builtin ielm
   :custom
@@ -1409,8 +1508,8 @@ asterix (lists) intact from BEGIN to END."
     "i" '("IELM" . ielm))
 
   (general-def ielm-map
-    "C-RET" 'ielm-return
-    "RET" 'ielm-return-for-effect))
+    "C-<enter>" 'ielm-return
+    "<enter>" 'ielm-return-for-effect))
 
 ;;; External Tools & Services
 
@@ -1492,11 +1591,10 @@ asterix (lists) intact from BEGIN to END."
   :preface
   (defun parinfer-rust-mode-setup ()
     "Setup the parinfer-rust-mode.")
-  :functions (flycheck-running-p flycheck-add-next-checker)
   :hook ((emacs-lisp-mode clojure-mode) . parinfer-rust-mode)
   :custom
-  (parinfer-rust-library-directory "~/.cargo/bin/")
-  (parinfer-rust-library "~/.cargo/bin/parinfer-rust-windows.dll")
+  (parinfer-rust-library (file-truename "~/.cargo/bin"))
+  (parinfer-rust-library "parinfer-rust-windows.dll")
   (parinfer-rust-disable-troublesome-modes t)
   :config
   (when (flycheck-running-p)
@@ -1519,7 +1617,6 @@ asterix (lists) intact from BEGIN to END."
   (helpful-heading ((t (:foreground "#28ABE3" :weight bold))))
   :general
   (leader-help-menu
-    "i" '("Info" . consult-info)
     "." '("At point" . helpful-at-point)
     "f" '("Function" . helpful-function)
     "c" '("Command" . helpful-command)
@@ -1537,9 +1634,8 @@ asterix (lists) intact from BEGIN to END."
 (use-package transient)
 
 ;; An opinionated menu system built on top of `transient'
+
 (use-package casual)
-
-
 
 ;;; Search
 
@@ -1575,11 +1671,29 @@ asterix (lists) intact from BEGIN to END."
   (undo-outer-limit 1006632960))
 
 (use-package surround
+  :preface
+  (defun surround-with-parens ()
+    "Insert parens around the current thing."
+    (interactive)
+    (surround-insert "(" ))
+
+  (defun surround-with-double-quotes ()
+    "Insert quotes around the current thing."
+    (interactive)
+    (surround-insert "\"" ))
+
+  (defun surround-with-curly ()
+    "Insert quotes around the current thing."
+    (interactive)
+    (surround-insert "{" ))
   :general
-  (general-def 'global
-    "C-'" '("Mark surrounding..." . surround-mark)
-    "M-'" '("Surround with..."    . surround-insert)
-    "C-M-'" 'surround-keymap))
+  (global-map
+   "C-'"   '("Mark"       . surround-mark)
+   "M-'"   '("Insert"     . surround-insert)
+   "C-M-'" '("Surround"   . surround-keymap)
+   "M-("   '("Add Parens" . surround-with-parens)
+   "M-{"   '("Add Curly"  . surround-with-parens)
+   "M-\""  '("Add Quotes" . surround-with-double-quotes)))
 
 (use-package drag-stuff
   :delight
@@ -1608,7 +1722,7 @@ asterix (lists) intact from BEGIN to END."
     "M-<DEL>"   'vertico-directory-up
     "M-<enter>" 'minibuffer-force-complete-and-exit
     "<escape>"  'minibuffer-keyboard-quit
-    "RET"       'vertico-directory-enter)
+    "<enter>"       'vertico-directory-enter)
   :custom
   (enable-recursive-minibuffers t)
   (vertico-scroll-margin 2) ;; Different scroll margin
@@ -1673,6 +1787,8 @@ asterix (lists) intact from BEGIN to END."
   (xref-show-xrefs-function #'consult-xref)
   (xref-show-definitions-function #'consult-xref)
   :general-config
+  (leader-help-menu
+    "i" '("Info" . consult-info))
   (leader-search-menu
     "b" '("Bookmark"         . consult-bookmark)
     "g" '("(rip)Grep"        . consult-ripgrep)
@@ -1767,10 +1883,11 @@ project, or ask for a project if not in one."
 (use-package embark
   ;; Embark is actually not really about completion, but more like a "right-click"
   ;; menu function.  Perform an action on the given object.
+  :defer nil
   :general
   (global-menu
-    "C-RET" '("Embark list" . embark-act)
-    "M-."   '("embark"      . embark-dwim)
+    "C-<enter>" '("Embark list"       . embark-act)
+    "M-."   '("embark"            . embark-dwim)
     "M-S-x" '("Describe bindings" . embark-bindings))
 
   :init
@@ -1836,9 +1953,7 @@ insert the given functions after it. Otherwise, insert them at the top."
   :custom
   (cape-file-directory-must-exit nil)
   :general
-  (global-menu
-    :prefix "C-c"
-    "p" 'cape-prefix-map))
+  (global-menu "M-c" '("Cape" . cape-prefix-map)))
 
 
 (use-package citre
@@ -1885,6 +2000,7 @@ template file."
   (auto-insert-directory config:emacs-templates-dir)
   (auto-insert-alist
    '((("\\.el\\'" . "Emacs Lisp") . ["template.el" insert/expand-snippet])
+     (("\\.clj\\'" . "Clojure") . ["template.clj"  insert/expand-snippet])
      (("\\.org\\'" . "org-mode") . ["template.org" insert/expand-snippet])))
   :config
   (auto-insert-mode 1))
@@ -1979,12 +2095,19 @@ template file."
 (use-package flycheck-hl-todo
   ;; TODO: Add a toggle for hl-todo in flycheck lists
   :defer 5 ; Need to be initialized after the rest of checkers
+  :after (flycheck hl-todo)
   :config
   (flycheck-hl-todo-setup))
 
 (use-package consult-todo)
 
-;;; Filetypes & modes
+;;; Text display
+
+;;;; Outlines
+
+(use-package outshine)
+
+;;;; Structure
 
 (use-builtin treesit
   :defines
@@ -1994,7 +2117,7 @@ template file."
    treesit-font-lock-level 4 ; 4 is the max level
    treesit-extra-load-path
    (list
-    (file-truename (expand-file-name config:emacs-treesitter-grammar-dir))))
+    (file-truename config:emacs-treesitter-grammar-dir)))
   (dolist (mode-remap
            ;; use all of the builtin ts-modes
            '((c-mode          . c-ts-mode)
@@ -2016,114 +2139,197 @@ template file."
   :custom
   (treesit-auto-install nil))
 
+;;; Filetypes & modes
+
 ;;;; Emacs-lisp
 
 (use-builtin elisp-mode
   :preface
   (defun emacs-lisp-mode-setup ()
+    "Setup `emacs-lisp-mode'"
+    (outline-minor-mode 1)
     ;; When inside a `:custom' section, variables are not shown like they are when
     ;; you type setq <tab>, so this adds them in, and because we use nerd-icons,
     ;; we can easily distinguish the vars from the functions
     ;; see: https://github.com/jwiegley/use-package/issues/1077
     ;; WARNING: Affects all emacs-lisp completions
-    (outline-minor-mode 1)
     (setq-local completion-at-point-functions
-                (list (cape-capf-inside-code #'cape-elisp-symbol)))
-    )
-  :hook
-  (emacs-lisp-mode . emacs-lisp-mode-setup)
-  (before-save . check-parens)
+                (list (cape-capf-inside-code #'cape-elisp-symbol))))
+  :hook (emacs-lisp-mode . emacs-lisp-mode-setup)
+  :hook (before-save . check-parens)
   :general
-  (make-leader-menu "Eval" "e"
-    :keymaps 'emacs-lisp-mode-map
-    "b" 'eval-buffer
-    "d" 'eval-defun
-    "r" 'eval-region
+  (major-mode-menu emacs-lisp-mode-map
+    "e"  '(:ignore t :which-key "Eval")
+    "eb" '("Buffer" . eval-buffer)
+    "ed" '("Defun"  . eval-defun)
+    "er" '("Region" . eval-region)
     "T" '("ielm REPL" . ielm)))
 
 ;;;; Clojure
 
+(use-package clojure-mode
+  :custom
+  ;; `always-align' is the community style-guide recommended indentation
+  (clojure-indent-style 'always-align)
+  (clojure-indent-keyword-style 'always-align)
+  (clojure-use-backtracking-indent t)
+  (clojure-docstring-fill-column 110)
+  (clojure-docstring-fill-prefix 2)
+  (clojure-build-tool-files
+   '("project.clj"
+     "deps.edn" "build.clj"
+     "bb.edn" "nbb.edn"
+     "deps-clr.edn"))
+  (clojure-preferred-build-tool "deps.edn"))
+
 (use-package cider
   :custom
-  (cider-jack-in-default 'lein)
-  ;; TODO: There are a lot more CIDER functions to get into menus, see them with
-  ;; describe-keymap cider-mode-map
-  :general-config
-  (make-leader-menu "Eval" "e"
-    :keymaps 'cider-mode-map
-    "C-q" '("Quit CIDER" . cider-quit)
-    ;; -----------------------------------------------------
-    ;; defun D
-    ;; TODO: Create a macro for "sub menus".  Its silly to list vD for all of
-    ;; these, it should be something like def-submenu "vD" "Defun"
-    ;; I think spacemacs has one
-    "D" '(:ignore t :which-key "Defun")
-    "Dr" '("Read & eval defun at point" . cider-read-and-eval-defun-at-point)
-    "D." '("Defun at point" . cider-eval-defun-at-point)
-    "D," '("Defun up to point" . cider-eval-defun-up-to-point)
-    ;; tap
-    "T" '(:ignore t :which-key "Tap")
-    "Tl" '("Last sexp" . cider-tap-last-sexp)
-    "T." '("Sexp at point" . cider-tap-sexp-at-point)
-    ;; sexp
-    "." '("Sexp at point" . cider-eval-sexp-at-point)
-    ;; context
-    "c" '("Sexp at point (context)" . cider-eval-sexp-at-point-in-context)
-    "C" '("Last Sexp (context)" . cider-eval-last-sexp-in-context)
+  (cider-jack-in-default 'clj)
+  :general
+  (major-mode-menu clojure-mode-map
+    "<tab>" '("Complete" . complete-symbol)
+    "?"     '("Selector" . cider-selector)
+    ;; Goto references
+    "g"     '(:ignore t :which-key "Goto")
+    "gd"    '("Definition"    . cider-find-var)
+    "gn"    '("Namespace"     . cider-find-ns)
+    "gk"    '("Keyword"       . cider-find-keyword)
+    "gr"    '("Resource"      . cider-find-resource)
+    "gR"    '("Referenced"    . cider-xref-fn-refs)
+    "g M-r" '("Referenced by" . cider-xref-fn-refs-select)
+    "gD"    '("Depends"       . cider-xref-fn-deps)
+    "g M-d" '("Depends on"    . cider-xref-fn-deps-select)
+    ;; Return from goto
+    "]"     '("Pop back"      . cider-pop-back)
+    ;; Docs
+    "d"     '("Docs"     . cider-doc-map)
+    "D"     '("Describe conn" . cider-describe-connection)
 
-    "," '("Sexp up to point" . cider-eval-sexp-up-to-point)
-    "e" '("Last sexp" . cider-eval-last-sexp)
-    "%" '("Last sexp and replace" . cider-eval-last-sexp-and-replace)
 
-    "l" '("List at point" . cider-eval-list-at-point)
-    "s" '("dwim" . cider-eval-dwim)
-    "n" '("Eval namespace" . cider-eval-ns-form)
-    "r" '("Eval Region" . cider-eval-region)
+    ;; Evaluation
+    "e"     '("Eval"        . cider-eval-commands-map)
+    ";"     '("To comment"  . cider-eval-defun-to-comment)
+    "i"     '("Insert"      . cider-insert-commands-map)
+    "j"     '(:ignore t :which-key "Jack in")
+    "ji"     '("Jack in"       . cider-jack-in)
+    "jc"     '("Clj"       . cider-jack-in-clj)
+    "js"    '("Cljs"     . cider-jack-in-cljs)
+    "r"     '(:ignore t :which-key "Repl")
+    "re"    '("Eval"        . cider-eval-last-sexp-to-repl)
+    "ri"    '("Insert"      . cider-insert-last-sexp-in-repl)
+    "rr"    '("Switch to"   . cider-switch-to-repl-buffer)
+    "rc"    '("Clear"       . cider-find-and-clear-repl-output)
+    "rb"    '("Load buffer" . cider-load-buffer-and-switch-to-repl-buffer)
+    "R"     '("Read & eval" . cider-read-and-eval)
+    ;;
+    "u"     '("Undef"            . cider-undef)
+    "U"     '("Undef All"        . cider-undef-all)
+    "m"     '("Macro expand"     . cider-macroexpand-1)
+    "M"     '("Macro expand all" . cider-macroexpand-all)
+    "n"     '("Namespace"        . cider-ns-map)
+    "i"     '("Inspect"          . cider-inspect)
+    ;; Tracing
+    "T"     '(:ignore t :which-key "Trace")
+    "Tv"    '("Var"       . cider-toggle-trace-var)
+    "Tn"    '("Namespace" . cider-toggle-trace-ns)
+    "p"     '("Profile"   . cider-profile-map)
+    ;; Load
+    "L"     '(:ignore t :which-key "Load")
+    "Lb"    '("Buffer" . cider-load-buffer)
+    "Lf"    '("File" . cider-load-file)
+    "LA"    '("All files" . cider-load-all-files)
+    ;; Testing
+    "t"     '("Test" . cider-test-commands-map)
+    ;; Logging
+    "l"     '(:ignore t :which-key "Log")
+    "la"    '("Append"    . cider-log-appender)
+    "lc"    '("Consume"   . cider-log-consumer)
+    "le"    '("Event"     . cider-log-event)
+    "ls"    '("Show"      . cider-log-show)
+    "lf"    '("Framework" . cider-log-framework)
+    "li"    '("Info"      . cider-log-info)
+    "ll"    '("Log"       . cider-log)
+    ;; Quit
+    "z"     '("Interrupt" . cider-interrupt)
+    "Z"     '(:ignore t :which-key "Quit")
+    "Zz"    '("Quit" . cider-quit)
+    "Zr"    '("" . cider-restart)))
 
-    "k" '("Kill last result" . cider-kill-last-result)
-    ))
-
-(use-package clojure-ts-mode
-  :disabled t
+(use-package clj-refactor
   :preface
-  (defun clojure-ts-mode-setup ()
-    "Setup clojure treesitter mode."
-    (cider-mode))
-  :hook (clojure-ts-mode . clojure-ts-mode-setup)
-  :config
-  (add-to-list 'org-src-lang-modes '("clojure" . clojure-ts-mode))
-  (add-to-list 'org-src-lang-modes '("clj" . clojure-ts-mode))
-  ;; Tree-sitter conflicts with CIDER
-  ;; (add-to-list 'major-mode-remap-alist '(clojure-mode . clojure-ts-mode))
-  )
+  (defun clj-refactor-setup ()
+    "Setup clj-refactor mode."
+    (clj-refactor-mode 1))
+  :hook (clojure-mode . clj-refactor-setup))
+
 
 (use-package flycheck-clj-kondo
   :hook (clojure-mode . flycheck-mode))
 
 ;;;; powershell
 
-(use-package powershell
-  :mode ("\\.ps[dm]?1\\'" . powershell-mode)
-  :interpreter ("pwsh.exe" . powershell-mode)
-  :custom
-  (powershell-default-langserver-path
-   (file-name-as-directory (file-name-concat
-                            config:emacs-lsp-server-root-dir "pwsh")))
-  (powershell-indent 2)
-  (powershell-continuation-indent 1))
-
 (use-package powershell-ts-mode
   :vc
   (:url "https://github.com/dmille56/powershell-ts-mode.git"
-        :branch main)
+        :branch main))
+
+(use-package powershell
+  :defer nil
+  :commands (powershell)
+  :requires (powershell-ts-mode eglot)
+  :preface
+  (message "I'm loading the powershell preface")
+  (defun eglot-register-powershell ()
+    "Add the PSES to the eglot server list"
+    (add-to-list
+     'eglot-server-programs
+     `((powershell-mode powershell-ts-mode) . ,(eglot-powershell-editor-services-command))))
+  
+  (defun eglot-powershell-editor-services-command ()
+    "Return a properly formatted command for eglot to start the PSES.
+I keep all of the lsp servers in `config:emacs-lsp-server-root-dir' separated into their own directories"
+    (let* ((pwsh-exe (or (executable-find "pwsh.exe") (executable-find "powershell")))
+           (pwsh-lsp-root   (file-name-concat config:emacs-lsp-server-root-dir "pwsh"))
+           (module-path     (file-name-concat pwsh-lsp-root "PowerShellEditorServices"))
+           (start-script    (expand-file-name "Start-EditorServices.ps1" module-path))
+           (logs-root       (file-name-concat config:emacs-local-dir ".cache" "eglot" "pses"))
+           (log-path        (expand-file-name "logs" logs-root))
+           (session-id      (format "%s" (emacs-pid)))
+           (session-prefix  "emacs-eglot-session-")
+           (session-ext     ".json")
+           (log-level       "Trace"))
+      `(,pwsh-exe
+        "-NoLogo" "-NoProfile" "-NonInteractive"
+        "-ExecutionPolicy" "Bypass"
+        "-File" ,start-script
+        "-HostName" "\"Emacs Host\""
+        "-HostProfileId" "'Emacs.LSP'"
+        "-HostVersion" "9.0.0"
+        "-LogPath" ,log-path
+        "-LogLevel" ,log-level
+        "-EnableConsoleRepl"
+        "-SessionDetailsPath" ,(expand-file-name
+                                (concat session-prefix session-id session-ext)
+                                log-path)
+        "-Stdio"
+        "-BundledModulesPath" ,module-path
+        "-FeatureFlags" "@()")))
+  :init
+  (message "I'm loading the powershell init")
+  (eglot-register-powershell)
   :custom
   (powershell-ts-enable-imenu-top-level-vars nil)
   (powershell-ts-command-default 'pwsh)
   (powershell-ts-mode-indent-offset 2)
   :config
-  (add-to-list 'major-mode-remap-alist '(powershell-mode . powershell-ts-mode))
+  (message "I'm loading the powershell config")
   (add-to-list 'org-src-lang-modes '("powershell" . powershell-ts))
-  (add-to-list 'org-src-lang-modes '("pwsh"       . powershell-ts)))
+  (add-to-list 'org-src-lang-modes '("pwsh"       . powershell-ts))
+  (define-advice powershell (:after ( &rest args) my)
+    (remove-hook 'kill-buffer-hook 'powershell-delete-process))
+  (define-advice powershell--get-max-window-width (:around (orig-fn &rest args) my)
+    (setq powershell--max-window-width 200)))
+
 
 ;;;; nushell
 
@@ -2171,65 +2377,6 @@ template file."
 (use-package json-mode
   :hook (json-mode-hook . json-mode-setup)
   :mode "\\.json\\'")
-
-;;; Projects & Repositories
-
-
-
-;;;; Language Servers
-
-(use-builtin eglot
-  :preface
-  (defun eglot-register-powershell ()
-    "Add the PSES to the eglot server list"
-    (let* ((pwsh-lsp-root (file-name-concat config:emacs-lsp-server-root-dir "pwsh"))
-           (start-script (expand-file-name "PowerShellEditorServices/Start-EditorServices.ps1" pwsh-lsp-root))
-           (bundled-modules pwsh-lsp-root)
-           (logs-root (file-name-concat config:emacs-local-dir ".cache" "eglot"))
-           (log-path (expand-file-name "pses/logs" logs-root))
-           (session-path (expand-file-name "pses/emacs-eglot-session.json" logs-root))
-           (eglot-sync-connect t))
-      (add-to-list
-       'eglot-server-programs
-       `(powershell-mode
-         . ("pwsh"
-            "-NoLogo" "-NoProfile" "-NonInteractive"
-            "-OutputFormat" "Text"
-            "-File" ,start-script
-            "-HostName" "\"Emacs Host\""
-            "-HostProfileId" "Emacs.LSP"
-            "-HostVersion" "8.0.1"
-            "-LogPath" ,log-path
-            "-LogLevel" "Normal"
-            "-EnableConsoleRepl"
-            "-SessionDetailsPath" ,session-path
-            ;; "-AdditionalModules" "@('PowerShellEditorServices.VSCode')"
-            "-Stdio"
-            "-BundledModulesPath" ,bundled-modules
-            "-FeatureFlags" "\"@()\""
-            )))))
-  :custom
-  (eglot-sync-connect t)
-  :config
-  (eglot-register-powershell))
-
-(use-package lsp-mode
-  :custom
-  (lsp-idle-delay 0.500)
-  (lsp-log-io t)
-  (lsp-warn-no-matched-clients nil)
-  (lsp-session-file
-   (file-name-concat config:emacs-local-dir ".lsp-session-v1"))
-  (lsp-server-install-dir
-   (file-name-concat (getenv "XDG_DATA_HOME") "lsp"))
-  (lsp-progress-via-spinner t)
-  (lsp-progress-spinner-type 'horizontal-breathing-long))
-
-(use-package lsp-ui
-  :init
-  ;; Disable the original in order to use the sideline package
-  (setopt lsp-ui-sideline-enable nil))
-
 
 ;;; Personal Information management
 
@@ -2320,6 +2467,7 @@ Defaults to lowercase, unless UPPER is non-nil."
   ;;    - TODO :: Has been triaged and is available for work
   ;;    - WAIT :: Blocked until something happens. Record a note when entering
   ;;              and a timestamp when leaving
+  ;;    - MEET :: A Meeting is different than a task
   ;;    - DONE :: No more work to do.  Record a timestamp
   ;;    - DROP :: No longer required, OBE or irrelevant.  Record a note
   (org-todo-keywords
