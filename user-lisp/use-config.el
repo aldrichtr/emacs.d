@@ -28,29 +28,7 @@
   :type 'boolean
   :group 'config:emacs)
 
-;;; Functions
 
-(defun create-directory-maybe (dir)
-  "Create the directory DIR if is not already."
-  (unless (file-exists-p dir)
-    (mkdir dir)))
-
-(defun create-file-maybe (file)
-  "Create the FILE if is not already."
-  (unless (file-exists-p file)
-    (write-region "" nil file)))
-
-(defun create-config-directory-maybe ()
-  "Create the directories that are specified in config."
-  (dolist (config-dir
-           '(config:emacs-backup-dir
-             config:emacs-auto-save-dir
-             config:emacs-compiler-cache-dir
-             config:emacs-snippets-dir
-             config:emacs-templates-dir
-             config:emacs-treesitter-grammar-dir
-             config:emacs-custom-themes-dir))
-    `(create-directory-maybe ,config-dir )))
 
 
 ;;; Main functions
@@ -62,7 +40,7 @@
          (default-directory dir))
     (normal-top-level-add-subdirs-to-load-path)))
 
-(defmacro use-config (feature &rest use-package-args)
+(defun use-config (feature &rest use-package-args)
   "Load FEATURE from `config:user-package-dir'.
 USE-PACKAGE-ARGS are optional additional arguments forwarded to `use-package'."
   (declare (indent defun))

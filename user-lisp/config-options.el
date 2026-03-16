@@ -163,137 +163,149 @@ When FILE is given, concat file and local-dir"
 ;;; Treesitter parsers
 
 (defcustom config:emacs-treesitter-grammar-dir
-(config/emacs-local-dir "tree-sitter")
-"The directory where treesitter grammars are stored."
-:type 'directory
-:group 'config:emacs)
+  (config/emacs-local-dir "tree-sitter")
+  "The directory where treesitter grammars are stored."
+  :type 'directory
+  :group 'config:emacs)
 
 (unless (file-exists-p config:emacs-treesitter-grammar-dir)
-(mkdir config:emacs-treesitter-grammar-dir))
+  (mkdir config:emacs-treesitter-grammar-dir))
 
 ;;; fonts
 
 ;;;; Core fonts
 
+(defcustom config:emacs-base-font-name
+  "FiraCode Nerd Font"
+  "The Emacs base font."
+  :type 'string
+  :group 'config:emacs)
+
+(defcustom config:emacs-ligature-font-name
+  "D2CodingLigature Nerd Font"
+  "The Emacs font that includes ligatures."
+  :type 'string
+  :group 'config:emacs)
+
 (defcustom config:emacs-mono-font-name
-"AnonymicePro Nerd Font Mono"
-"Set the default monospaced font."
-:type 'string
-:group 'config:emacs)
+  "FiraCode Nerd Font Mono"
+  "The Emacs monospaced font."
+  :type 'string
+  :group 'config:emacs)
 
 (defcustom config:emacs-propo-font-name
-"AnonymicePro Nerd Font Propo"
-"Set the default proportional font."
-:type 'string
-:group 'config:emacs)
+  "AnonymicePro Nerd Font Propo"
+  "The Emacs proportional font."
+  :type 'string
+  :group 'config:emacs)
 
 
 ;;;; Default font
 
-(defcustom config:emacs-default-font-name
-config:emacs-mono-font-name
-"The default font used across Emacs."
-:type 'string
-:group 'config:emacs)
+(defcustom config:emacs-font-name
+  config:emacs-propo-font-name
+  "The font used across Emacs."
+  :type 'string
+  :group 'config:emacs)
 
 
-(defcustom config:emacs-default-font-size
-(cond ((eq system-type 'android) "14")
-(t "12"))
-"The default font size used across Emacs."
-:type 'string
-:group 'config:emacs)
+(defcustom config:emacs-font-size
+  (cond ((eq system-type 'android) "14")
+        (t "12"))
+  "The font size used across Emacs."
+  :type 'string
+  :group 'config:emacs)
 
 
-(defcustom config:emacs-default-font
-(concat config:emacs-default-font-name
-"-"
-config:emacs-default-font-size)
-"The default font string used across Emacs."
-:type 'string
-:group 'config:emacs)
+(defcustom config:emacs-font
+  (concat config:emacs-font-name
+          "-"
+          config:emacs-font-size)
+  "The default font string used across Emacs."
+  :type 'string
+  :group 'config:emacs)
 
 ;;;; Icon font
 
 (defcustom config:emacs-icon-font-name
-"FiraCode Nerd Font Propo"
-"The default font string used for icons."
-:type 'string
-:group 'config:emacs)
+  "Symbols Nerd Font"
+  "The font used for icons."
+  :type 'string
+  :group 'config:emacs)
 
 (defcustom config:emacs-icon-font-size
-"10"
-"The default font size used for icons."
-:type 'string
-:group 'config:emacs)
+  "10"
+  "The font size used for icons."
+  :type 'string
+  :group 'config:emacs)
 
 
 (defcustom config:emacs-icon-font
-(concat config:emacs-icon-font-name
-"-"
-config:emacs-icon-font-size)
-"The default font string used for icons."
-:type 'string
-:group 'config:emacs)
+  (concat config:emacs-icon-font-name
+          "-"
+          config:emacs-icon-font-size)
+  "The default font string used for icons."
+  :type 'string
+  :group 'config:emacs)
 
 ;;; theme
 
 (defcustom config:emacs-default-theme
-'zenburn
-"The default theme used across Emacs."
-:type 'symbol
-:group 'config:emacs)
+  'colonoscopy
+  "The default theme used across Emacs."
+  :type 'symbol
+  :group 'config:emacs)
 
 
 ;;; Window layout
 
 (defcustom config:emacs-fill-column-docs 120
-"How wide the buffer should be for document type buffers."
-:type 'integer
-:group 'config)
+  "How wide the buffer should be for document type buffers."
+  :type 'integer
+  :group 'config)
 
 (defcustom config:emacs-fill-column-prog 100
-"How wide the buffer should be for programming type buffers."
-:type 'integer
-:group 'config)
+  "How wide the buffer should be for programming type buffers."
+  :type 'integer
+  :group 'config)
 
 ;;; Server
 
 (defcustom config:emacs-server-run t
-"Should EMACS start the server on init."
-:type 'boolean
-:group 'config:emacs)
+  "Should EMACS start the server on init."
+  :type 'boolean
+  :group 'config:emacs)
 
 (defcustom config:emacs-lsp-server-root-dir
-          "~/.local/share/lsp"
-"Root diretory for Language Server Protocol Servers."
-:type 'directory
-:group 'config:emacs)
+  "~/.local/share/lsp"
+  "Root diretory for Language Server Protocol Servers."
+  :type 'directory
+  :group 'config:emacs)
 
 ;;; Profile
 
 (defcustom config:emacs-profile
-(or (getenv "EMACS_PROFILE") "default")
-"The profile used across Emacs."
-:type 'string
-:group 'config:emacs)
+  (or (getenv "EMACS_PROFILE") "default")
+  "The profile used across Emacs."
+  :type 'string
+  :group 'config:emacs)
 
 ;;; Keybinding system
 
 (defcustom config:emacs-leader-key "SPC"
-"The key used to trigger the leader menu."
-:type 'string
-:group 'config:emacs)
+  "The key used to trigger the leader menu."
+  :type 'string
+  :group 'config:emacs)
 
 (defcustom config:emacs-leader-non-normal-key "S-SPC"
-"The key used to trigger the leader menu."
-:type 'string
-:group 'config:emacs)
+  "The key used to trigger the leader menu."
+  :type 'string
+  :group 'config:emacs)
 
 (defcustom config:emacs-local-leader-key ","
-"The key used to trigger the leader menu for the current major-mode."
-:type 'string
-:group 'config:emacs)
+  "The key used to trigger the leader menu for the current major-mode."
+  :type 'string
+  :group 'config:emacs)
 
 
 (provide 'config-options)

@@ -4,6 +4,8 @@
 
 ;;; Code:
 
+;;; Creating items if they dont exist
+
 (defun create-directory-maybe (dir)
   "Create the directory DIR if is not already."
   (unless (file-exists-p dir)
@@ -33,6 +35,8 @@
              config:emacs-recent-files-file
              ))
     `(create-file-maybe ,config-file)))
+
+;;; Operate on file and buffer
 
 (defun delete-file-and-buffer ()
   "Delete the file that the current buffer is visiting."
@@ -67,6 +71,9 @@ If the buffer is not visiting a file, just rename the buffer."
             (set-visited-file-name new-name)
             (rename-buffer new-name)))))
     (message "Renamed buffer '%s' and file to '%s'" old-name new-name)))
+
+
+;;; Visiting emacs startup files
 
 (defvar config:emacs-config-dir)
 

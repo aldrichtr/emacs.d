@@ -1,0 +1,5 @@
+﻿[WRN]: The log level 'Normal' is deprecated and will be removed in a future release. Please update your settings or command line options to use one of the following options: 'Trace', 'Debug', 'Information', 'Warning', 'Error', 'Critical'.
+[INF]: Loading PowerShell Editor Services Assemblies
+[INF]: Starting PowerShell Editor Services
+[INF]: PSES Startup Completed. Starting Language Server.
+[INF]: Please check the LSP log file in your client for further messages. In VSCode, this is the 'PowerShell' output pane

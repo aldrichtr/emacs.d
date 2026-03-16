@@ -4,7 +4,6 @@
 
 ;;; Code:
 
-
 ;;; Preliminaries
 
 ;;;; User Information
@@ -12,6 +11,11 @@
 (setopt
  user-full-name "Timothy R. Aldrich"
  user-mail-address "timothy.r.aldrich@gmail.com")
+
+;;;; Config options
+(add-to-list 'load-path (expand-file-name "config" user-emacs-directory))
+
+(require 'config-options)
 
 ;;;; Package system
 
@@ -22,13 +26,6 @@
 ;;;; Keybinding system
 
 (require 'leader-key-system)
-
-;;;; Config options
-
-(use-builtin config-options
-  :custom
-  (when (os-android-p)
-    (config:emacs-default-font-name "FiraCode Nerd Font Mono Regular")))
 
 ;;;; Dependencies
 
@@ -75,6 +72,8 @@
   (ef-themes-variable-pitch-ui t)
   (ef-themes-common-palette-overrides nil))
 
+(use-package doric-themes)
+
 (use-package doom-themes
   :custom
   (doom-themes-padded-modeline nil)
@@ -90,12 +89,10 @@
   (nerd-icons-font-family config:emacs-icon-font-name))
 
 (use-feature ; theme
-  :defines
-  (custom-theme-directory
-   config:emacs-custom-themes-dir
-   config:emacs-default-theme)
+  :defer nil
+  :custom
+  (custom-theme-directory config:emacs-custom-themes-dir)
   :init
-  (setopt custom-theme-directory config:emacs-custom-themes-dir)
   (load-theme config:emacs-default-theme t))
 
 
@@ -397,10 +394,12 @@
   (leader-file-menu
     "."   '("Find this file" . ffap)
     "<"   '("Recent files"   . recentf-open)
+    ;; TODO: This should move to the dirvish config
     "d"   '("Dired"          . dirvish)
     "D"   '("Delete file"    . delete-file-and-buffer)
     "f"   '("Find file"      . find-file)
     "M-r" '("Rename file"    . rename-visited-file)
+    ;; TODO: These should move to the evil config
     "s"   '("save"           . evil-save)
     "S"   '("Save all"       . evil-write-all)
     "w"   '("Write"          . evil-write))
@@ -655,6 +654,7 @@
     dired-mode-map
     "h" 'dired-gitignore-global-mode))
 
+
 (use-package dirvish
   :init (dirvish-override-dired-mode)
   :custom
@@ -681,6 +681,40 @@
   (dirvish-override-dired-mode t)
   (dirvish-peek-mode t)
   (dirvish-side-follow-mode t))
+
+;;;;; Treemacs
+
+(use-package treemacs
+  :functions (treemacs-load-theme treemacs-fringe-indicator-mode)
+  :custom
+  (treemacs-persist-file
+   (file-name-concat config:emacs-local-dir ".cache" "treemacs" "persist"))
+  (treemacs-last-error-persist-file
+   (file-name-concat config:emacs-local-dir ".cache" "treemacs" "last-error"))
+  (treemacs-position 'right)
+  (treemacs-is-never-other-window t)
+  (treemacs-hide-dot-git-directory t)
+  (treemacs-follow-mode t)
+  (treemacs-filewatch-mode nil)
+  :config
+  (treemacs-fringe-indicator-mode 'only-when-focused)
+  (treemacs-load-theme "nerd-icons")
+  (treemacs-git-mode 'extended)
+  :general
+  (leader-menu
+    "]" '("Treemacs" . treemacs))
+  (major-mode-menu treemacs-mode
+    "w" '("Workspace" . treemacs-workspace-map)
+    "p" '("Project"   . treemacs-project-map)))
+
+(use-package treemacs-projectile
+  :after (treemacs projectile))
+
+(use-package treemacs-nerd-icons
+  :after (treemacs nerd-icons))
+
+(use-package treemacs-evil
+  :after (treemacs evil))
 
 ;;; Emacs Application
 
@@ -781,20 +815,22 @@
   :custom
   ;; We want the window manager to control the window (frame) size
   (frame-inhibit-implied-resize t)
-  :config
-  (setopt frame-title-format
-          '(""
-            invocation-name
-            " " emacs-version
-            " - "
-            user-login-name " - "
-            (:eval (if (buffer-file-name)
-                       (abbreviate-file-name (buffer-file-name))))))
-  (set-frame-font config:emacs-default-font nil t)
+  (frame-title-format
+   '(""
+     invocation-name
+     " " emacs-version
+     " - "
+     user-login-name " - "
+     (:eval (if (buffer-file-name)
+                (abbreviate-file-name (buffer-file-name))))))
+  :init
+  (set-face-attribute 'default nil
+                      :background "#000000")
+  (set-frame-font config:emacs-font nil t)
   (add-to-list 'initial-frame-alist
-               `(font . ,config:emacs-default-font))
+               `(font . ,config:emacs-font))
   (add-to-list 'default-frame-alist
-               `(font . ,config:emacs-default-font))
+               `(font . ,config:emacs-font))
   :general
   (leader-frame-menu
     "f" '("New" . make-frame-command)
@@ -891,8 +927,8 @@
 
        ;; Is not magit buffer.
        (and (string-prefix-p "magit" name)
-            (not (file-name-extension name)))
-       )))
+            (not (file-name-extension name))))))
+
   :general
   (nmap
     :prefix "gT"
@@ -903,8 +939,8 @@
     "p" '("Prev" . centaur-tabs-backward)
     "<" '("Move left"  . centaur-tabs-move-current-tab-to-left)
     ">" '("Move right" . centaur-tabs-move-current-tab-to-right)
-    "q" '("Quit"       . centaur-tabs-kill-all-buffers-in-current-group)
-    ))
+    "q" '("Quit"       . centaur-tabs-kill-all-buffers-in-current-group)))
+
 
 ;;;; Modeline
 
@@ -1129,13 +1165,13 @@
     ;; window destruction
     "o"   '("Only"   . delete-other-windows)
     "d"   '("Delete" . evil-window-delete)
-    "q"   '("Quit"   . evil-quit)
+    "q"   '("Quit"   . evil-quit))
 
     ;; Tabs
     ;; T          tab-window-detach
     ;; g T        tab-bar-switch-to-prev-tab
     ;; g t        evil-tab-next
-    )
+
   :config
   (ace-window-display-mode 1))
 
@@ -1336,6 +1372,7 @@ asterix (lists) intact from BEGIN to END."
   (highlight-indent-guides-character ?|)
   (highlight-indent-guides-responsive 'stack)
   :custom-face
+  (default ((t (:background "gray23"))))
   (highlight-indent-guides-odd-face       ((t (:background "darkgray"))))
   (highlight-indent-guides-even-face      ((t (:background "dimgray"))))
   (highlight-indent-guides-character-face ((t (:foreground "gainsboro")))))
@@ -1358,6 +1395,8 @@ asterix (lists) intact from BEGIN to END."
   (rainbow-delimiters-depth-8-face ((t (:foreground "MediumSeaGreen"))))
   (rainbow-delimiters-depth-9-face ((t (:foreground "DodgerBlue")))))
 
+;;;; Outlines
+
 (use-builtin outline
   :functions (outline-font-lock-fontify-region)
   :preface
@@ -1379,10 +1418,7 @@ asterix (lists) intact from BEGIN to END."
   (nmap
     :prefix "z"
     "n" 'outline-forward-same-level
-    "p" 'outline-backward-same-level)
-  :hook
-  ((outline-mode-hook outline-minor-mode-hook)
-   . outline-mode-setup))
+    "p" 'outline-backward-same-level))
 
 (use-package backline
   ;; backline is used in conjunction with `outline-minor-mode-highlight' to extend
@@ -1394,6 +1430,44 @@ asterix (lists) intact from BEGIN to END."
   :after outline
   :hook
   (outline-minor-mode . outline-minor-faces-mode))
+
+(use-package outshine)
+
+(use-package outorg)
+
+(use-package navi-mode)
+
+;;;; Structure
+
+(use-builtin treesit
+  :defines
+  (config:emacs-treesitter-grammar-dir)
+  :init
+  (setopt
+   treesit-font-lock-level 4 ; 4 is the max level
+   treesit-extra-load-path
+   (list
+    (file-truename config:emacs-treesitter-grammar-dir)))
+  (dolist (mode-remap
+           ;; use all of the builtin ts-modes
+           '((c-mode          . c-ts-mode)
+             (cmake-mode      . cmake-ts-mode)
+             (dockerfile-mode . dockerfile-ts-mode)
+             (elixir-mode     . elixir-ts-mode)
+             (go-mode         . go-ts-mode)
+             (heex-mode       . heex-ts-mode)
+             (java-mode       . java-ts-mode)
+             (json-mode       . json-ts-mode)
+             (lua-mode        . lua-ts-mode)
+             (php-mode        . php-ts-mode)
+             (ruby-mode       . ruby-ts-mode)
+             (rust-mode       . rust-ts-mode)
+             (typescript-mode . typescript-ts-mode)))
+    (add-to-list 'major-mode-remap-alist mode-remap)))
+
+(use-package treesit-auto
+  :custom
+  (treesit-auto-install nil))
 
 ;;;; Application modes
 
@@ -1587,14 +1661,20 @@ asterix (lists) intact from BEGIN to END."
 
 
 (use-package parinfer-rust-mode
+  ;; in order to make this work, I needed to compile it myself
+  ;; gh clone justinbarclay/parinfer-rust
+  ;; cd parinfer-rust
+  ;; cargo build --release --features emacs
+  ;; Then copy from `target' to `~/.config/emacs/parinfer-rust/parinfer-rust-windows.dll'
+  ;; Although there are customization options for that path, they dont work and
+  ;; the library only looks to that path.
   :requires (flycheck)
   :preface
   (defun parinfer-rust-mode-setup ()
     "Setup the parinfer-rust-mode.")
-  :hook ((emacs-lisp-mode clojure-mode) . parinfer-rust-mode)
+  :hook (clojure-mode . parinfer-rust-mode)
+        (emacs-lisp-mode . parinfer-rust-mode)
   :custom
-  (parinfer-rust-library (file-truename "~/.cargo/bin"))
-  (parinfer-rust-library "parinfer-rust-windows.dll")
   (parinfer-rust-disable-troublesome-modes t)
   :config
   (when (flycheck-running-p)
@@ -1675,17 +1755,17 @@ asterix (lists) intact from BEGIN to END."
   (defun surround-with-parens ()
     "Insert parens around the current thing."
     (interactive)
-    (surround-insert "(" ))
+    (surround-insert "("))
 
   (defun surround-with-double-quotes ()
     "Insert quotes around the current thing."
     (interactive)
-    (surround-insert "\"" ))
+    (surround-insert "\""))
 
   (defun surround-with-curly ()
     "Insert quotes around the current thing."
     (interactive)
-    (surround-insert "{" ))
+    (surround-insert "{"))
   :general
   (global-map
    "C-'"   '("Mark"       . surround-mark)
@@ -1831,8 +1911,8 @@ project, or ask for a project if not in one."
     (consult-ripgrep))
   :general
   (global-menu
-    "C-/" '("Search" . consult-rg-in-project))
-  )
+    "C-/" '("Search" . consult-rg-in-project)))
+
 
 (use-package consult-yasnippet
   :defines (consult-yasnippet--snippets)
@@ -2101,43 +2181,15 @@ template file."
 
 (use-package consult-todo)
 
-;;; Text display
+;;; Language Server
 
-;;;; Outlines
+(use-package lsp-mode
+  :disabled
+  :hook (powershell-ts-mode . lsp)
+  (lsp-mode lsp-enable-which-key-integration)
+  :commands lsp)
 
-(use-package outshine)
-
-;;;; Structure
-
-(use-builtin treesit
-  :defines
-  (config:emacs-treesitter-grammar-dir)
-  :init
-  (setopt
-   treesit-font-lock-level 4 ; 4 is the max level
-   treesit-extra-load-path
-   (list
-    (file-truename config:emacs-treesitter-grammar-dir)))
-  (dolist (mode-remap
-           ;; use all of the builtin ts-modes
-           '((c-mode          . c-ts-mode)
-             (cmake-mode      . cmake-ts-mode)
-             (dockerfile-mode . dockerfile-ts-mode)
-             (elixir-mode     . elixir-ts-mode)
-             (go-mode         . go-ts-mode)
-             (heex-mode       . heex-ts-mode)
-             (java-mode       . java-ts-mode)
-             (json-mode       . json-ts-mode)
-             (lua-mode        . lua-ts-mode)
-             (php-mode        . php-ts-mode)
-             (ruby-mode       . ruby-ts-mode)
-             (rust-mode       . rust-ts-mode)
-             (typescript-mode . typescript-ts-mode)))
-    (add-to-list 'major-mode-remap-alist mode-remap)))
-
-(use-package treesit-auto
-  :custom
-  (treesit-auto-install nil))
+(use-package lsp-ui :commands lsp-ui-mode)
 
 ;;; Filetypes & modes
 
@@ -2266,70 +2318,23 @@ template file."
 (use-package flycheck-clj-kondo
   :hook (clojure-mode . flycheck-mode))
 
+;;;; Dotnet
+
+(use-package csproj-mode)
+
+(use-package dotnet)
+
 ;;;; powershell
 
+(use-builtin config-eglot-powershell
+  :autoload config/eglot-register-powershell)
+
 (use-package powershell-ts-mode
-  :vc
-  (:url "https://github.com/dmille56/powershell-ts-mode.git"
-        :branch main))
-
-(use-package powershell
-  :defer nil
-  :commands (powershell)
-  :requires (powershell-ts-mode eglot)
-  :preface
-  (message "I'm loading the powershell preface")
-  (defun eglot-register-powershell ()
-    "Add the PSES to the eglot server list"
-    (add-to-list
-     'eglot-server-programs
-     `((powershell-mode powershell-ts-mode) . ,(eglot-powershell-editor-services-command))))
-  
-  (defun eglot-powershell-editor-services-command ()
-    "Return a properly formatted command for eglot to start the PSES.
-I keep all of the lsp servers in `config:emacs-lsp-server-root-dir' separated into their own directories"
-    (let* ((pwsh-exe (or (executable-find "pwsh.exe") (executable-find "powershell")))
-           (pwsh-lsp-root   (file-name-concat config:emacs-lsp-server-root-dir "pwsh"))
-           (module-path     (file-name-concat pwsh-lsp-root "PowerShellEditorServices"))
-           (start-script    (expand-file-name "Start-EditorServices.ps1" module-path))
-           (logs-root       (file-name-concat config:emacs-local-dir ".cache" "eglot" "pses"))
-           (log-path        (expand-file-name "logs" logs-root))
-           (session-id      (format "%s" (emacs-pid)))
-           (session-prefix  "emacs-eglot-session-")
-           (session-ext     ".json")
-           (log-level       "Trace"))
-      `(,pwsh-exe
-        "-NoLogo" "-NoProfile" "-NonInteractive"
-        "-ExecutionPolicy" "Bypass"
-        "-File" ,start-script
-        "-HostName" "\"Emacs Host\""
-        "-HostProfileId" "'Emacs.LSP'"
-        "-HostVersion" "9.0.0"
-        "-LogPath" ,log-path
-        "-LogLevel" ,log-level
-        "-EnableConsoleRepl"
-        "-SessionDetailsPath" ,(expand-file-name
-                                (concat session-prefix session-id session-ext)
-                                log-path)
-        "-Stdio"
-        "-BundledModulesPath" ,module-path
-        "-FeatureFlags" "@()")))
-  :init
-  (message "I'm loading the powershell init")
-  (eglot-register-powershell)
-  :custom
-  (powershell-ts-enable-imenu-top-level-vars nil)
-  (powershell-ts-command-default 'pwsh)
-  (powershell-ts-mode-indent-offset 2)
-  :config
-  (message "I'm loading the powershell config")
-  (add-to-list 'org-src-lang-modes '("powershell" . powershell-ts))
-  (add-to-list 'org-src-lang-modes '("pwsh"       . powershell-ts))
-  (define-advice powershell (:after ( &rest args) my)
-    (remove-hook 'kill-buffer-hook 'powershell-delete-process))
-  (define-advice powershell--get-max-window-width (:around (orig-fn &rest args) my)
-    (setq powershell--max-window-width 200)))
-
+  :mode "\\.ps1\\'"
+  :vc (:url "https://github.com/dmille56/powershell-ts-mode.git"
+            :branch main)
+  :init (config/eglot-register-powershell)
+  :hook (eglot-ensure))
 
 ;;;; nushell
 
@@ -2382,13 +2387,38 @@ I keep all of the lsp servers in `config:emacs-lsp-server-root-dir' separated in
 
 ;;;; org
 
+
+(use-builtin config-org-agenda
+  :after org
+  :commands
+  (config/agenda-rebuild-views!
+   config/agenda-rebuild-file-list!
+   config/agenda-apply-category-icons!)
+  :init
+  (config/agenda-rebuild-views!)
+  (config/agenda-apply-category-icons!)
+  (config/agenda-rebuild-file-list!)
+  :general
+  (major-mode-menu org-mode-map
+    "a" '("Agenda" . org-agenda)))
+
+(use-builtin config-org-todo
+  :after org
+  :commands
+  (config/todo-apply-keywords!
+   config/todo-define-effort-estimates!)
+   :init
+  (config/todo-apply-keywords!)
+  (config/todo-define-effort-estimates!)
+  :general
+  (major-mode-menu org-mode-map
+    "t" '("Todo" . org-todo)))
+
 (use-builtin org
-  :requires (f)
   :mode ("\\.org$" . org-mode)
-  :defines (org-save-all-org-buffers)
   :preface
 
-  (setopt org-directory (file-name-concat (getenv "HOME") "vaults" "org"))
+  (setopt org-directory (f-join (getenv "HOME") "vaults" "org"))
 
   (defun visit-org-inbox ()
     "Load the inbox file."
@@ -2407,15 +2437,6 @@ I keep all of the lsp servers in `config:emacs-lsp-server-root-dir' separated in
     ;; dont add pair for `less-than_symbol' in `org-mode'.  It messes up org-tempo
     (add-function :before-until electric-pair-inhibit-predicate
                   (lambda (c) (eq c ?<))))
-
-  (defun org-agenda-nerd-icons (fun prefix alist)
-    "Associate nerd-icons with org agenda categories.
-    FUN is the icon function, PREFIX is the prefix of the icon name, and ALIST
-    is the list of categories associated with the icon name (sans-prefix)"
-    (mapcar (pcase-lambda (`(,category . ,icon))
-              `(,category
-                (,(funcall fun (concat prefix icon) :height 1.0))))
-            alist))
 
   (defun org-convert-md-link ()
     "Convert the Markdown link at point into an Org-mode link."
@@ -2453,7 +2474,9 @@ Defaults to lowercase, unless UPPER is non-nil."
   :hook (org-mode . org-mode-setup)
 
   :custom
+
 ;;;; locations ---------------------------------------------------------------
+
   (org-clock-persist-file
    (file-name-concat config:emacs-local-dir "org-clock-save.el"))
   (org-directory (file-name-concat (getenv "HOME") "vaults" "org"))
@@ -2463,37 +2486,12 @@ Defaults to lowercase, unless UPPER is non-nil."
    (file-name-concat org-directory ".archive/%s_archive.org::"))
 
 ;;;; Agenda
-  ;;    - NEW :: Needing triage. record a timestamp when leaving the `NEW' state
-  ;;    - TODO :: Has been triaged and is available for work
-  ;;    - WAIT :: Blocked until something happens. Record a note when entering
-  ;;              and a timestamp when leaving
-  ;;    - MEET :: A Meeting is different than a task
-  ;;    - DONE :: No more work to do.  Record a timestamp
-  ;;    - DROP :: No longer required, OBE or irrelevant.  Record a note
-  (org-todo-keywords
-   '((sequence "NEW(N/!)" "TODO(t)" "NEXT(n)" "WAIT(w@/!)")
-     (sequence "MEET(m)")
-     (sequence "STORY(s@/!)")
-     (sequence "|" "DONE(d!)" "DROP(q@)")))
 
-  (org-provide-todo-statistics t)
 
   (org-scheduled-delay-days 3)
   (org-deadline-warning-days 3)
 
   (org-habit-show-habits-only-for-today t)
-
-  (org-agenda-category-icon-alist
-   (append (org-agenda-nerd-icons
-            #'nerd-icons-faicon
-            "nf-fa-"
-            '(("REVIEW" . "bullseye")
-              ("ADMN"   . "terminal")
-              ("BLOG"   . "pen_fancy")
-              ("Meeting" . "group")
-              ("THINK"  . "brain")))
-           '(("" '(space . (:width (11)))))))
-
 
 
 ;;;; Log drawer
@@ -2545,16 +2543,6 @@ Defaults to lowercase, unless UPPER is non-nil."
   (org-clock-mode-line-total 'today)
 
 ;;;; keybindings
-
-  :general
-  ;; TODO: I don't think that o is the right top level menu, is it?
-  (make-leader-menu "Org-mode" "o"
-    "a" 'org-agenda
-    "c" 'org-capture
-    "i" 'visit-org-inbox
-    "p" 'org-insert-link
-    "y" 'org-store-link)
-  ;; This menu is under `major-mode-leader', see `config:emacs-local-leader-key'
 
   (major-mode-menu org-mode-map ; "top-level" in org-mode menu
     "a" '("Agenda" . org-agenda)
@@ -2622,7 +2610,9 @@ Defaults to lowercase, unless UPPER is non-nil."
      (t         . ("❰" "❱"))))
 
   ;; keywords
-  (org-modern-keyword "")
+  (org-modern-keyword (quote (("title"     . "")
+                              ("file_tags" . "")
+                              (t           . ""))))
 
   ;; tables
   ;; When I turn this on, the cursor gets hidden when I navigate into the table,
@@ -2634,190 +2624,11 @@ Defaults to lowercase, unless UPPER is non-nil."
   :config
   (global-org-modern-mode 1))
 
+
 (use-package org-modern-indent
   :vc
   (:url "https://github.com/jdtsmith/org-modern-indent.git"
         :branch main))
-
-;;;; Org Agenda
-
-(use-builtin org
-  :config
-  ;; reset the list of agenda views
-  (setq org-agenda-custom-commands '())
-
-  (add-to-list
-   'org-agenda-custom-commands
-   '("A" "@Agenda"
-     (( agenda ""
-        ((org-agenda-overriding-header "Upcoming deadlines this week")
-         (org-agenda-ndays 7)
-         (org-deadline-warning-days 0)
-         (org-agenda-start-on-weekday nil)
-         (org-agenda-show-all-dates nil)
-         (org-agenda-entry-types '(:deadline))
-         (org-agenda-skip-deadline-if-done t)
-         (org-agenda-warning-days 0)))
-      ( agenda ""
-        ((org-agenda-overriding-header "Items scheduled this week")
-         (org-agenda-ndays 7)
-         (org-agenda-start-on-weekday nil)
-         (org-agenda-show-all-dates nil)
-         (org-agenda-entry-types '(:scheduled))
-         (org-habit-show-habits-only-for-today nil)))
-      ( agenda ""
-        ((org-agenda-overriding-header "One week overview")
-         (org-agenda-ndays 7)
-         (org-agenda-start-on-weekday nil)
-         (org-agenda-repeating-timestamp-show-all t)
-         (org-agenda-entry-types '(:deadline :scheduled :timestamp :sexp))
-         (org-deadline-warning-days 0))))
-     ((org-agenda-with-colors t)
-      (ps-print-color-p 'black-white))
-     ("~/paperPlanner/Agenda-Export/Page-01.CalendarForOneWeek.ps")))
-
-
-  (add-to-list
-   'org-agenda-custom-commands
-   '("n" "@Next Actions"
-     ((tags-todo "+errand-someday/NEXT"
-                 ((org-agenda-overriding-header "@Errand")
-                  (org-agenda-tags-todo-honor-ignore-options t)
-                  (org-agenda-todo-ignore-scheduled '(future))))
-      ( tags-todo "+email-someday/NEXT"
-        ((org-agenda-overriding-header "@EMail")
-         (org-agenda-tags-todo-honor-ignore-options t)
-         (org-agenda-todo-ignore-scheduled '(future))))
-      (tags-todo "+phone-someday/NEXT"
-                 ((org-agenda-overriding-header "@Phone")
-                  (org-agenda-tags-todo-honor-ignore-options t)
-                  (org-agenda-todo-ignore-scheduled '(future))))
-      (tags-todo "+web-someday/NEXT"
-                 ((org-agenda-overriding-header "@Online")
-                  (org-agenda-tags-todo-honor-ignore-options t)
-                  (org-agenda-todo-ignore-scheduled '(future))))
-      (tags-todo "+cac-someday/NEXT"
-                 ((org-agenda-overriding-header "@PKI")
-                  (org-agenda-tags-todo-honor-ignore-options t)
-                  (org-agenda-todo-ignore-scheduled '(future))))
-      (tags-todo "+office-someday/NEXT"
-                 ((org-agenda-overriding-header "@Office")
-                  (org-agenda-tags-todo-honor-ignore-options t)
-                  (org-agenda-todo-ignore-scheduled '(future))))
-      (tags-todo "+home-someday/NEXT"
-                 ((org-agenda-overriding-header "@Home")
-                  (org-agenda-tags-todo-honor-ignore-options t)
-                  (org-agenda-todo-ignore-scheduled '(future))))
-      (tags-todo "+laptop-someday/NEXT"
-                 ((org-agenda-overriding-header "@Laptop")
-                  (org-agenda-tags-todo-honor-ignore-options t)
-                  (org-agenda-todo-ignore-scheduled '(future))))
-      (tags-todo "+vault-someday/NEXT"
-                 ((org-agenda-overriding-header "@Vault")
-                  (org-agenda-tags-todo-honor-ignore-options t)
-                  (org-agenda-todo-ignore-scheduled '(future))))
-      (tags-todo "-CATEGORY=\"Someday\"-CATEGORY=\"REVIEW\"+TAGS=\"\"/NEXT"
-                 ((org-agenda-overriding-header "@Uncategorized")
-                  (org-agenda-tags-todo-honor-ignore-options t)
-                  (org-agenda-todo-ignore-scheduled '(future)))))
-     ((org-agenda-with-colors t)
-      (ps-print-color-p 'black-white))
-     ("~/paperPlanner/Agenda-Export/Page-02.AllNextActions.ps")))
-
-  (add-to-list
-   'org-agenda-custom-commands
-   '("u" "@Uncategorized Next Actions" tags-todo "-CATEGORY=\"Someday\"-CATEGORY=\"REVIEW\"+TAGS=\"\"/NEXT"
-     ((org-agenda-overriding-header "@Uncategorized Next Actions")
-      (org-agenda-todo-keyword-format "")
-      (org-agenda-prefix-format "%b\n%i %-12c:")
-      (org-agenda-tags-todo-honor-ignore-options t)
-      (org-agenda-todo-ignore-scheduled '(future)))
-     ((org-agenda-with-colors t)
-      (ps-print-color-p 'black-white))
-     ("~/paperPlanner/Agenda-Export/Page-03.UncategorizedNextActions.ps")))
-
-  (add-to-list
-   'org-agenda-custom-commands
-   '("p" "@Projects" tags-todo "-IGNORE-someday-wait/TODO"
-     ((org-agenda-overriding-header "@Projects")
-      (org-agenda-tags-todo-honor-ignore-options t)
-      (org-tags-match-list-sublevels 'indented)
-      (org-agenda-skip-function
-       (lambda nil
-         (org-agenda-skip-subtree-if (quote nottodo) '("NEXT")))))
-     ((org-agenda-with-colors t)
-      (ps-print-color-p 'black-white))
-     ("~/paperPlanner/Agenda-Export/Page-05.ProjectList.ps")))
-
-  (add-to-list
-   'org-agenda-custom-commands
-   '("o" "@Overview"
-     ((tags-todo "-IGNORE-someday-wait/TODO"
-                 ((org-agenda-overriding-header "@Overview")
-                  (org-agenda-tags-todo-honor-ignore-options t)
-                  (org-agenda-todo-ignore-scheduled '(future))
-                  (org-tags-match-list-sublevels nil)
-                  (org-agenda-sorting-strategy '(category-up effort-up))
-                  (org-agenda-remove-tags t)))
-      (stuck ""))
-     ((org-agenda-with-colors t)
-      (ps-print-color-p 'black-white))
-     ("~/paperPlanner/Agenda-Export/Page-06.Overview.ps")))
-
-  (add-to-list
-   'org-agenda-custom-commands
-   '("S" "@Someday/Maybe" tags-todo "+someday/TODO"
-     ((org-agenda-overriding-header "Someday/Maybe")
-      (org-agenda-prefix-format " - ")
-      (org-agenda-todo-keyword-format ""))
-     ((org-agenda-with-colors t)
-      (ps-print-color-p 'black-white))
-     ("~/paperPlanner/Agenda-Export/Page-06.SomedayMaybeList.ps")))
-
-  (add-to-list
-   'org-agenda-custom-commands
-   '("R" "@Review Commands"
-     ("Ro" "@Review"
-      (( tags-todo "REVIEW"
-         ((org-agenda-skip-function  '(org-agenda-skip-entry-if 'scheduled))
-          (org-agenda-overriding-header "Tasks Marked for Review")
-          ;;don't list sub levels, just the one we marked
-          (org-tags-match-list-sublevels nil)
-          (org-agenda-sorting-strategy '(category-up))))
-       ( tags "journal+REVIEW"
-         ((org-agenda-overriding-header "Journal entries marked for Review")))
-       ( tags "CATEGORY=\"REVIEW\"-TODO={[[:upper:]]+}|REVIEW-journal-TODO={[[:upper:]]+}" ;total hack to exclude all todo's
-         ((org-agenda-overriding-header "Notes Marked for Review")))
-
-       ( stuck ""))
-      ((org-agenda-with-colors t)
-       (ps-print-color-p 'black-white))
-      ("~/paperPlanner/Agenda-Export/Page-07.TheReview.ps"))
-     ("Rp" tags-todo "-someday+Effort=\"\"/NEXT"
-      ((org-agenda-overriding-header "Actions that need planning")
-       (org-agenda-view-columns-initially t)))))
-
-  (add-to-list
-   'org-agenda-custom-commands
-   '("w" "@waiting" todo "WAIT"
-     ((org-agenda-overriding-header "Waiting For"))
-     ((org-agenda-with-colors t)
-      (ps-print-color-p 'black-white))
-     ("~/paperPlanner/Agenda-Export/Page-08.WaitingFor.ps")))
-
-  (add-to-list
-   'org-agenda-custom-commands
-   '("l" "@Lists" tags "list"
-     ((org-agenda-overriding-header "@Lists"))
-     ((org-tags-match-list-sublevels nil)
-      (org-agenda-with-colors t)
-      (ps-print-color-p 'black-white))
-     ("~/paperPlanner/Agenda-Export/Page-09.ListOfLists.ps")))
-
-  (add-to-list
-   'org-agenda-custom-commands
-   '("y" "Next time im connected" tags "web-someday"
-     ((org-agenda-overriding-header "While Connected")))))
 
 ;;;; Org refile & capture
 
@@ -2845,6 +2656,7 @@ Defaults to lowercase, unless UPPER is non-nil."
 
 (use-builtin org-protocol)
 
+;; [[https://github.com/thisirs/org-context][Contextual agenda and capture]]
 (use-package org-context)
 
 (use-builtin org-capture
@@ -2885,7 +2697,7 @@ Defaults to lowercase, unless UPPER is non-nil."
   (org-src-preserve-indentation nil)
   (org-src-content-indentation 2)
   (org-src-fontify-natively t)
-  (org-src-ask-before-returning-to-edit-buffer t)
+  (org-src-ask-before-returning-to-edit-buffer nil)
   (org-src-window-setup 'current-window)
   (org-src-tab-acts-natively t)
   :config
@@ -2898,10 +2710,13 @@ Defaults to lowercase, unless UPPER is non-nil."
              ("heex"       . heex-ts)
              ("java"       . java-ts)
              ("json"       . json-ts)
+             ("jsonc"      . json-ts)
              ("lua"        . lua-ts)
              ("php"        . php-ts)
              ("ruby"       . ruby-ts)
              ("rust"       . rust-ts)
+             ("powershell" . powershell-ts-mode)
+             ("pwsh"       . powershell-ts-mode)
              ("typescript" . typescript-ts)))
     (add-to-list 'org-src-lang-modes src-lang)))
 
@@ -2960,8 +2775,12 @@ Defaults to lowercase, unless UPPER is non-nil."
   (org-download-method 'directory)
   (org-download-image-dir
    (file-name-concat org-directory "assets" "images"))
+  (org-download-screenshot-basename "screenshot.png")
+  (org-download-link-format-function)
+  (org-download-screenshot-file (expand-file-name
+                                 org-download-screenshot-basename
+                                 (config/emacs-local-dir ".cache")))
   (org-download-backend "curl")
-  (org-download-screenshot-basename "")
   (org-download-timestamp "%Y-%m-%d-%H-%M-%S")
   (org-download-screenshot-method "imagemagick/convert"))
 
@@ -3061,7 +2880,7 @@ Defaults to lowercase, unless UPPER is non-nil."
     "Determine the parent of the current NODE or ORG-ROAM-NODE."
     (let* ((name (org-roam-node-current-file node))
            (parts (string-split name "\\.")))
-      (if (length> parts 1 )
+      (if (length> parts 1)
           (string-join (butlast parts) ".")
         "root")))
 
@@ -3152,6 +2971,27 @@ With prefix ARG prompt with `completing-read` to choose a node."
     "V"   '("Roam UI" . org-roam-ui-open)))
 
 ;; Used to list ids, etc. using org-mem
+
+(use-package consult-org-roam
+  :after org-roam
+  :init
+  (require 'consult-org-roam)
+  ;; Activate the minor mode
+  (consult-org-roam-mode 1)
+  :custom
+  ;; Use `ripgrep' for searching with `consult-org-roam-search'
+  (consult-org-roam-grep-func #'consult-ripgrep)
+  ;; Configure a custom narrow key for `consult-buffer'
+  (consult-org-roam-buffer-narrow-key ?r)
+  ;; Display org-roam buffers right after non-org-roam buffers
+  ;; in consult-buffer (and not down at the bottom)
+  (consult-org-roam-buffer-after-buffers t)
+  :config
+  ;; Eventually suppress previewing for certain functions
+  (consult-customize
+   consult-org-roam-forward-links
+   :preview-key "M-."))
+
 (use-package inspector)
 
 (use-package org-mem

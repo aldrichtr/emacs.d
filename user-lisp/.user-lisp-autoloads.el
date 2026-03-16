@@ -106,7 +106,7 @@ Load the config file NAME optionally passings ARGS
 
 ;;; Generated autoloads from use-config.el
 
-(register-definition-prefixes "use-config" '("config:user-config-dir" "create-" "use-config"))
+(register-definition-prefixes "use-config" '("config:user-config-dir" "use-config"))
 
 
 ;;; Generated autoloads from config-keybindings.el

@@ -5,7 +5,7 @@
 ;;; Code:
 
 ;; My libraries of Elisp used throughout init and operation of GNU Emacs.
-(add-to-list 'load-path (file-truename (locate-user-emacs-file "user-lisp")))
+(add-to-list 'load-path (locate-user-emacs-file "user-lisp"))
 
 (require 'os)             ; Operating System/Environment utilities
 (require 'data-size)      ; Data size calculations, such as mb, gb, etc
@@ -39,7 +39,8 @@
 (defun set-emacs-performance ()
   "Set some performance settings."
   (setopt gc-cons-threshold       (mb 256)
-          read-process-output-max (mb 64)))
+          read-process-output-max (mb 64)
+          max-lisp-eval-depth (* 10 1000)))
 
 (add-hook 'emacs-startup-hook #'set-emacs-performance)
 
